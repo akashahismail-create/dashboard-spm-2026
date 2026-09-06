@@ -22,7 +22,19 @@ def load_data():
     return df_jadual, df_nama, df_pusat, df_bilik, df_full
 
 df_jadual, df_nama, df_pusat, df_bilik, df_full = load_data()
+st.markdown("---") # Garisan pemisah
 
+# BUTTON PENGURUSAN CALON
+st.markdown("""
+<a href="https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec" 
+   target="_blank" 
+   style="display:block; padding:25px; font-size:26px; font-weight:bold; color:white; 
+          background:#2563eb; text-align:center; text-decoration:none; border-radius:15px; margin-bottom:20px;">
+    PENGURUSAN CALON
+</a>
+""", unsafe_allow_html=True)
+
+st.markdown("---") # Garisan pemisah
 NAMA_ADMIN = "Akashah bin Ismail"
 JAWATAN_ADMIN = "Pegawai meja SPM Negeri Selangor"
 
