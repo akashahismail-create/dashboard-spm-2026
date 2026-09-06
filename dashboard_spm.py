@@ -65,14 +65,28 @@ st.markdown("---")
 col_kosong, col_butang = st.columns([4, 1])
 
 with col_butang:
-    st.markdown("""
-    <a href="https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec" 
-       target="_blank" 
-       style="display:block; padding:10px; font-size:14px; font-weight:bold; color:white; 
-              background:#2563eb; text-align:center; text-decoration:none; border-radius:8px;">
-       📝 CALON
-    </a>
-    """, unsafe_allow_html=True)
+    if st.button("📝 CALON", key="btn_calon", use_container_width=True, type="primary"):
+        st.session_state.show_pw = True
+
+if st.session_state.get("show_pw", False):
+    with st.form("form_password"):
+        st.write("### 🔒 Masukkan Password")
+        pw = st.text_input("Password", type="password")
+        col1, col2 = st.columns(2)
+        with col1:
+            submit = st.form_submit_button("Masuk")
+        with col2:
+            cancel = st.form_submit_button("Batal")
+
+        if submit:
+            if pw == "spmB":  # <--- TUKAR PASSWORD SINI
+                st.session_state.show_pw = False
+                st.markdown('<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec">', unsafe_allow_html=True)
+                st.success("Password betul! Membuka...")
+            else:
+                st.error("Password salah!")
+        if cancel:
+            st.session_state.show_pw = False
 
 st.write("---")
 
