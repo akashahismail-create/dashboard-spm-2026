@@ -33,14 +33,16 @@ with col_logo:
     # GAMBAR YANG KAU UPLOAD TADI
     st.image("logo.png", width=100) 
 
-with col_title:# TUKAR WARNA BACKGROUND
-st.markdown("""
-<style>
-.stApp {
-    background-color: #E6F3FF;  /* Warna biru muda */
-}
-</style>
-""", unsafe_allow_html=True)
+with col_title:
+    # TUKAR WARNA BACKGROUND
+    st.markdown("""
+    <style>
+    .stApp {
+        background-color: #E6F3FF;  /* Warna biru muda */
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     st.title("📊 Dashboard Pengurusan SPM 2026")
     st.write(f"**Nama:** {NAMA_ADMIN} | **Jawatan:** {JAWATAN_ADMIN}")
 
