@@ -25,16 +25,24 @@ df_jadual, df_nama, df_pusat, df_bilik, df_full = load_data()
 st.markdown("---") # Garisan pemisah
 
 # BUTTON PENGURUSAN CALON
-st.markdown("""
-<a href="https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec" 
-   target="_blank" 
-   style="display:block; padding:25px; font-size:26px; font-weight:bold; color:white; 
-          background:#2563eb; text-align:center; text-decoration:none; border-radius:15px; margin-bottom:20px;">
-    PENGURUSAN CALON
-</a>
-""", unsafe_allow_html=True)
+st.markdown("---")
 
-st.markdown("---") # Garisan pemisah
+# BUAT 2 KOLUM: Kiri kosong, Kanan butang
+col_kosong, col_butang = st.columns([4, 1])
+
+with col_butang:
+    st.markdown("""
+    <a href="https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec" 
+       target="_blank" 
+       style="display:block; padding:10px; font-size:14px; font-weight:bold; color:white; 
+              background:#2563eb; text-align:center; text-decoration:none; border-radius:8px;">
+       📝 CALON
+    </a>
+    """, unsafe_allow_html=True)
+
+st.markdown("---") 
+
+st.markdown("---")
 NAMA_ADMIN = "Akashah bin Ismail"
 JAWATAN_ADMIN = "Pegawai meja SPM Negeri Selangor"
 
