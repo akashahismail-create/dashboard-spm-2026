@@ -101,7 +101,8 @@ if st.session_state.get("show_pw", False):
 
 st.write("---")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏫 Senarai Pusat", "🔒 Senarai Bilik Kebal", "📅 Jadual", "🔍 Carian", "📈 Analisis"
+tab1, 
+tab2, tab3, tab4, tab5 = st.tabs(["🏫 Senarai Pusat", "🔒 Senarai Bilik Kebal", "📅 Jadual", "🔍 Carian", "📈 Analisis"
 ])
 
 with tab1:
