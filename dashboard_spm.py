@@ -102,7 +102,7 @@ if st.session_state.get("show_pw", False):
 st.write("---")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🏫 Senarai Pusat", "🔒 Senarai Bilik Kebal", "📅 Jadual + Pusat", "🔍 Carian", "📈 Analisis"
+    "🏫 Senarai Pusat", "🔒 Senarai Bilik Kebal", "📅 Jadual", "🔍 Carian", "📈 Analisis"
 ])
 
 with tab1:
@@ -121,7 +121,7 @@ with tab3:
 
 with tab4:
     st.subheader("🔍 Carian Mata Pelajaran + No Kertas")
-    carian_mp = st.text_input("Langkah 1: Cari Kod atau Nama Mata Pelajaran", placeholder="cth: 1119 atau SEJARAH")
+    carian_mp = st.text_input("Langkah 1: Cari Kod atau Nama Mata Pelajaran", placeholder="cth: 1249 atau SEJARAH")
 
     if carian_mp:
         mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
