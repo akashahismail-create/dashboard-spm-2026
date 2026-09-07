@@ -62,7 +62,7 @@ with col_logo:
     st.image("logo.png", width=200)
 with col_title:
     st.title(" Dashboard Pengurusan SPM 2026")
-    st.write(f"**Nama:** {NAMA_ADMIN}  / **Jawatan:** {JAWATAN_ADMIN}")
+    st.write("**Nama:** {NAMA_ADMIN}  / **Jawatan:** {JAWATAN_ADMIN}")
 
 st.write("---")
 # ===== HABIS HEADER =====
