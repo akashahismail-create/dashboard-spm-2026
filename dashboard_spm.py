@@ -37,8 +37,8 @@ st.markdown("---") # Garisan pemisah
 st.markdown("---")
 
 st.markdown("---")
-NAMA_ADMIN = "Akashah bin Ismail"
-JAWATAN_ADMIN = "Pegawai meja SPM Negeri Selangor"
+NAMA_ADMIN = "Akashah_bin_Ismail"
+JAWATAN_ADMIN = "Pegawai_Meja_SPM_Negeri_Selangor"
 
 # ===== BAHAGIAN HEADER + LOGO =====
 col_logo, col_title = st.columns([1, 5])
