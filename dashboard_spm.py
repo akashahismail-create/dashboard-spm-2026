@@ -1,156 +1,70 @@
 import streamlit as st
 import pandas as pd
 
-st.set_page_config(page_title="Dashboard Pengurusan SPM NEGERI SELANGOR", layout="wide")
+# ===== 1. SETTING PAGE =====
+st.set_page_config(
+    page_title="Dashboard SPM 2026",
+    page_icon="📊",
+    layout="wide"
+)
 
-# ===== KOD HILANGKAN SEMUA IKLAN + BAR STREAMLIT =====
-hide_streamlit_style = """
-    <style>
-    /* Sembunyi Header, Menu, Footer */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    [data-testid="stHeader"] {display: none;}
-
-    /* Sembunyi Viewer Settings, Deploy, Manage app atas kanan */
-    [data-testid="stToolbar"] {display: none;}
-    [data-testid="stDecoration"] {display: none;}
-
-    /* Sembunyi logo Streamlit + Mahkota kat bawah kanan */
-   .viewerBadge_link__1S3w1 {display: none;}
-   .styles_viewerBadge__1yB5_ {display: none;}
-   .viewerBadge_container__1QSob {display: none;}
-    </style>
-"""
-st.markdown(hide_streamlit_style, unsafe_allow_html=True)
-# ===== HABIS KOD SEMBUNYI =====
-
-@st.cache_data
-def load_data():
-    df_jadual = pd.read_excel('JADUAL PEPERISAAN SPM 2026.xlsx')
-    df_nama = pd.read_excel('nama sekolah.xlsx')
-    df_pusat = pd.read_excel('senarai pusat.xlsx')
-    df_bilik = pd.read_excel('senarai bilik kebal.xls')
-
-    for df in [df_jadual, df_nama, df_pusat, df_bilik]:
-        df.columns = df.columns.str.upper().str.strip()
-
-    df_temp = pd.merge(df_jadual, df_pusat, on='KOD MATA PELAJARAN', how='left')
-    df_full = pd.merge(df_temp, df_nama, on='NO PUSAT', how='left')
-
-    if 'TARIKH' in df_full.columns:
-        df_full['TARIKH'] = pd.to_datetime(df_full['TARIKH'], errors='coerce')
-
-    return df_jadual, df_nama, df_pusat, df_bilik, df_full
-
-df_jadual, df_nama, df_pusat, df_bilik, df_full = load_data()
-
-NAMA_ADMIN = "Akashah bin Ismail"
-JAWATAN_ADMIN = "Pegawai meja SPM Negeri Selangor"
-
-# ===== HEADER + LOGO + WARNA BACKGROUND =====
+# ===== 2. SEMBUNYIKAN MAHKOTA + SETTING GAMBAR BERPUSING =====
 st.markdown("""
 <style>
-.stApp {
-    background-color: #E6F3FF; /* Biru muda */
-}
+    /* Sembunyikan toolbar mahkota */
+    [data-testid="stToolbar"] {
+        display: none;
+    }
+    /* Kod untuk gambar berpusing */
+    .berpusing {
+        animation: spin 4s linear infinite;
+        width: 120px;
+        display: block;
+        margin: auto;
+        margin-bottom: 10px;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    /* Title cantik sikit */
+    .title {
+        text-align: center;
+        font-size: 32px;
+        font-weight: bold;
+        color: #1E3A8A;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-col_logo, col_title = st.columns([1, 5])
-with col_logo:
-    st.image("logo.png", width=100)
-with col_title:
-    st.title("📊 Dashboard Pengurusan SPM 2026")
-    st.write(f"**Nama:** {NAMA_ADMIN} | **Jawatan:** {JAWATAN_ADMIN}")
+# ===== 3. HEADER + LOGO BERPUSING =====
+# TUKAR LINK NI DENGAN LINK LOGO SEKOLAH AWAK
+logo_url = "https://upload.wikimedia.org/wikipedia/commons/a7/React-icon.svg" 
 
-st.write("---")
-# ===== HABIS HEADER =====
-
-col1, col2, col3 = st.columns(3)
-with col1: st.metric("Jumlah Pusat", df_nama['NO PUSAT'].nunique())
-with col2: st.metric("Jumlah Bilik Kebal", len(df_bilik))
-with col3: st.metric("Jumlah Subjek", df_jadual['KOD MATA PELAJARAN'].nunique())
-
+st.markdown(f'<img src="{logo_url}" class="berpusing">', unsafe_allow_html=True)
+st.markdown('<p class="title">DASHBOARD ANALISIS SPM 2026</p>', unsafe_allow_html=True)
 st.markdown("---")
 
-col_kosong, col_butang = st.columns([4, 1])
-with col_butang:
-    if st.button("📝 CALON", key="btn_calon", use_container_width=True, type="primary"):
-        st.session_state.show_pw = True
+# ===== 4. CONTOH DATA KOSONG - AWAK TUKAR DENGAN DATA BENAR =====
+data = {
+    'Mata Pelajaran': ['BM', 'BI', 'MATEMATIK', 'SAINS', 'SEJARAH'],
+    'Bil. A+': [15, 10, 8, 12, 20],
+    'Bil. Lulus': [80, 75, 70, 78, 90],
+    'Gred Purata': [3.2, 3.5, 4.1, 3.8, 2.9]
+}
+df = pd.DataFrame(data)
 
-if st.session_state.get("show_pw", False):
-    with st.form("form_password"):
-        st.write("### 🔒 Masukkan Password")
-        pw = st.text_input("Password", type="password")
-        col1, col2 = st.columns(2)
-        with col1:
-            submit = st.form_submit_button("Masuk")
-        with col2:
-            cancel = st.form_submit_button("Batal")
+# ===== 5. PAPARKAN DATA =====
+col1, col2 = st.columns(2)
 
-        if submit:
-            if pw == "spmB":
-                st.session_state.show_pw = False
-                st.markdown('<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec">', unsafe_allow_html=True)
-                st.success("Password betul! Membuka...")
-            else:
-                st.error("Password salah!")
-        if cancel:
-            st.session_state.show_pw = False
+with col1:
+    st.subheader("📈 Bilangan Lulus Mengikut Subjek")
+    st.bar_chart(df.set_index('Mata Pelajaran')['Bil. Lulus'])
 
-st.write("---")
+with col2:
+    st.subheader("📊 Jadual Keputusan")
+    st.dataframe(df, use_container_width=True)
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🏫 Senarai Pusat", "🔒 Senarai Bilik Kebal", "📅 Jadual + Pusat", "🔍 Carian", "📈 Analisis"
-])
-
-with tab1:
-    st.subheader("Senarai Pusat Peperiksaan")
-    st.dataframe(df_nama, use_container_width=True, hide_index=True)
-
-with tab2:
-    st.subheader("Senarai Bilik Kebal")
-    st.dataframe(df_bilik, use_container_width=True, hide_index=True)
-
-with tab3:
-    st.subheader("Jadual Peperiksaan + Maklumat Pusat")
-    want = ['TARIKH', 'HARI', 'KOD MATA PELAJARAN', 'MATA PELAJARAN', 'NO PUSAT', 'NAMA PUSAT', 'KOD KAWASAN']
-    cols = [c for c in want if c in df_full.columns]
-    st.dataframe(df_full[cols].drop_duplicates().sort_values('TARIKH'), use_container_width=True, hide_index=True)
-
-with tab4:
-    st.subheader("🔍 Carian Mata Pelajaran + No Kertas")
-    carian_mp = st.text_input("Langkah 1: Cari Kod atau Nama Mata Pelajaran", placeholder="cth: 1119 atau SEJARAH")
-
-    if carian_mp:
-        mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
-        mask_nama = df_full['MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
-        hasil_mp = df_full[mask_kod | mask_nama]
-
-        if not hasil_mp.empty:
-            kod = hasil_mp['KOD MATA PELAJARAN'].iloc[0]
-            nama_mp = hasil_mp['MATA PELAJARAN'].iloc[0]
-            st.success(f"Mata Pelajaran: **{kod} - {nama_mp}**")
-
-            if 'NO KERTAS' in hasil_mp.columns:
-                senarai_kertas = sorted(hasil_mp['NO KERTAS'].dropna().unique())
-                carian_kertas = st.selectbox("Langkah 2: Pilih No Kertas", options=['Semua'] + [str(x) for x in senarai_kertas])
-                hasil_akhir = hasil_mp if carian_kertas == 'Semua' else hasil_mp[hasil_mp['NO KERTAS'].astype(str) == str(carian_kertas)]
-            else:
-                hasil_akhir = hasil_mp
-
-            st.write(f"Jumlah Pusat: **{hasil_akhir['NO PUSAT'].nunique()}**")
-            display_cols = ['NO PUSAT', 'NAMA PUSAT', 'KOD KAWASAN', 'NO KERTAS']
-            display_cols = [c for c in display_cols if c in hasil_akhir.columns]
-            st.dataframe(hasil_akhir[display_cols].drop_duplicates().sort_values('NO PUSAT'), use_container_width=True, hide_index=True)
-        else:
-            st.warning(f"Tiada pusat menawarkan: '{carian_mp}'")
-
-with tab5:
-    st.subheader("Analisis Ringkas")
-    if 'KOD KAWASAN' in df_pusat.columns:
-        st.bar_chart(df_pusat['KOD KAWASAN'].value_counts())
-
-st.write("---")
-st.caption("Dashboard SPM 2026")
+# ===== 6. FOOTER =====
+st.markdown("---")
+st.caption("Dibangunkan oleh: Puan Akashah | Kemaskini Terakhir: Sept 2026")
