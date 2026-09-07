@@ -154,5 +154,5 @@ with tab5:
 
 st.write("---")
 st.caption("hak cipta terpelihara")
-st.write("---")
+st.write("")
 st.caption("akashah ismail")
