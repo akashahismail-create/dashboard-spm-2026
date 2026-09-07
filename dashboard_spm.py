@@ -61,7 +61,7 @@ col_logo, col_title = st.columns([1, 5])
 with col_logo:
     st.image("logo.png", width=200)
 with col_title:
-    st.title("📊 Dashboard Pengurusan SPM 2026")
+    st.title(" Dashboard Pengurusan SPM 2026")
     st.write(f"**Nama:** {NAMA_ADMIN}  / **Jawatan:** {JAWATAN_ADMIN}")
 
 st.write("---")
