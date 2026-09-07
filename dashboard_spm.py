@@ -153,4 +153,4 @@ with tab5:
         st.bar_chart(df_pusat['KOD KAWASAN'].value_counts())
 
 st.write("---")
-st.caption("Dashboard SPM 2026")
+st.caption("hak cipta terpelihara")
