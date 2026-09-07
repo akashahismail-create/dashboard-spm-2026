@@ -58,7 +58,7 @@ with col_title:
     """, unsafe_allow_html=True)
 
     st.title("📊 Dashboard Pengurusan SPM 2026")
-    st.write(f"**Nama:** {AKASHAH BIN ISMAIL} | **Jawatan:** {PEGAWAI MEJA SPM 2026}")
+    st.write(f"**Nama:** {NAMA_ADMIN} | **Jawatan:** {JAWATAN_ADMIN}")
 
 st.write("---")
 # ===== HABIS HEADER =====
