@@ -3,21 +3,27 @@ import pandas as pd
 
 st.set_page_config(page_title="Dashboard Pengurusan SPM NEGERI SELANGOR", layout="wide")
 
-# ===== SEMBUNYI SEMUA BAR ATAS START =====
-st.markdown("""
-<style>
-/* Sembunyi semua header Streamlit */
-[data-testid="stHeader"] {display: none;}
-header {visibility: hidden; height: 0%;}
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
+# ===== KOD HILANGKAN SEMUA IKLAN + BAR STREAMLIT =====
+hide_streamlit_style = """
+    <style>
+    /* Sembunyi Header, Menu, Footer */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    [data-testid="stHeader"] {display: none;}
 
-/* Sembunyi Viewer Settings + Deploy button */
-[data-testid="stToolbar"] {display: none;}
-</style>
-""", unsafe_allow_html=True)
-# ===== HABIS =====
+    /* Sembunyi Viewer Settings, Deploy, Manage app atas kanan */
+    [data-testid="stToolbar"] {display: none;}
+    [data-testid="stDecoration"] {display: none;}
 
+    /* Sembunyi logo Streamlit + Mahkota kat bawah kanan */
+   .viewerBadge_link__1S3w1 {display: none;}
+   .styles_viewerBadge__1yB5_ {display: none;}
+   .viewerBadge_container__1QSob {display: none;}
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+# ===== HABIS KOD SEMBUNYI =====
 
 @st.cache_data
 def load_data():
@@ -42,20 +48,18 @@ df_jadual, df_nama, df_pusat, df_bilik, df_full = load_data()
 NAMA_ADMIN = "Akashah bin Ismail"
 JAWATAN_ADMIN = "Pegawai meja SPM Negeri Selangor"
 
-# ===== BAHAGIAN HEADER + LOGO + WARNA =====
+# ===== HEADER + LOGO + WARNA BACKGROUND =====
 st.markdown("""
 <style>
 .stApp {
-    background-color: #E6F3FF; /* Warna biru muda */
+    background-color: #E6F3FF; /* Biru muda */
 }
 </style>
 """, unsafe_allow_html=True)
 
 col_logo, col_title = st.columns([1, 5])
-
 with col_logo:
-    st.image("logo.png", width=100) 
-
+    st.image("logo.png", width=100)
 with col_title:
     st.title("📊 Dashboard Pengurusan SPM 2026")
     st.write(f"**Nama:** {NAMA_ADMIN} | **Jawatan:** {JAWATAN_ADMIN}")
@@ -67,7 +71,7 @@ col1, col2, col3 = st.columns(3)
 with col1: st.metric("Jumlah Pusat", df_nama['NO PUSAT'].nunique())
 with col2: st.metric("Jumlah Bilik Kebal", len(df_bilik))
 with col3: st.metric("Jumlah Subjek", df_jadual['KOD MATA PELAJARAN'].nunique())
-    
+
 st.markdown("---")
 
 col_kosong, col_butang = st.columns([4, 1])
