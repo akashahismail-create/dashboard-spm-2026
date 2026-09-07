@@ -3,15 +3,21 @@ import pandas as pd
 
 st.set_page_config(page_title="Dashboard Pengurusan SPM NEGERI SELANGOR", layout="wide")
 
-# ===== SEMBUNYI BUTTON FORK + GITHUB + FOOTER START =====
+# ===== SEMBUNYI SEMUA BAR ATAS START =====
 st.markdown("""
 <style>
-#MainMenu {visibility: hidden;} /* Sembunyi menu 3 titik */
-header {visibility: hidden;} /* Sembunyi bar atas Fork + Github */
-footer {visibility: hidden;} /* Sembunyi "Made with Streamlit" kat bawah */
+/* Sembunyi semua header Streamlit */
+[data-testid="stHeader"] {display: none;}
+header {visibility: hidden; height: 0%;}
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+
+/* Sembunyi Viewer Settings + Deploy button */
+[data-testid="stToolbar"] {display: none;}
 </style>
 """, unsafe_allow_html=True)
 # ===== HABIS =====
+
 
 @st.cache_data
 def load_data():
@@ -32,31 +38,25 @@ def load_data():
     return df_jadual, df_nama, df_pusat, df_bilik, df_full
 
 df_jadual, df_nama, df_pusat, df_bilik, df_full = load_data()
-st.markdown("---") # Garisan pemisah
 
-st.markdown("---")
+NAMA_ADMIN = "Akashah bin Ismail"
+JAWATAN_ADMIN = "Pegawai meja SPM Negeri Selangor"
 
-st.markdown("---")
-NAMA_ADMIN = "Akashah_bin_Ismail"
-JAWATAN_ADMIN = "Pegawai_Meja_SPM_Negeri_Selangor"
+# ===== BAHAGIAN HEADER + LOGO + WARNA =====
+st.markdown("""
+<style>
+.stApp {
+    background-color: #E6F3FF; /* Warna biru muda */
+}
+</style>
+""", unsafe_allow_html=True)
 
-# ===== BAHAGIAN HEADER + LOGO =====
 col_logo, col_title = st.columns([1, 5])
 
 with col_logo:
-    # GAMBAR YANG KAU UPLOAD TADI
-    st.image("logo.png", width=100)
+    st.image("logo.png", width=100) 
 
 with col_title:
-    # TUKAR WARNA BACKGROUND
-    st.markdown("""
-    <style>
-   .stApp {
-        background-color: #E6F3FF; /* Warna biru muda */
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
     st.title("📊 Dashboard Pengurusan SPM 2026")
     st.write(f"**Nama:** {NAMA_ADMIN} | **Jawatan:** {JAWATAN_ADMIN}")
 
@@ -67,13 +67,10 @@ col1, col2, col3 = st.columns(3)
 with col1: st.metric("Jumlah Pusat", df_nama['NO PUSAT'].nunique())
 with col2: st.metric("Jumlah Bilik Kebal", len(df_bilik))
 with col3: st.metric("Jumlah Subjek", df_jadual['KOD MATA PELAJARAN'].nunique())
-
-# BUTTON PENGURUSAN CALON
+    
 st.markdown("---")
 
-# BUAT 2 KOLUM: Kiri kosong, Kanan butang
 col_kosong, col_butang = st.columns([4, 1])
-
 with col_butang:
     if st.button("📝 CALON", key="btn_calon", use_container_width=True, type="primary"):
         st.session_state.show_pw = True
@@ -89,7 +86,7 @@ if st.session_state.get("show_pw", False):
             cancel = st.form_submit_button("Batal")
 
         if submit:
-            if pw == "spmB": # <--- TUKAR PASSWORD SINI
+            if pw == "spmB":
                 st.session_state.show_pw = False
                 st.markdown('<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec">', unsafe_allow_html=True)
                 st.success("Password betul! Membuka...")
