@@ -3,6 +3,16 @@ import pandas as pd
 
 st.set_page_config(page_title="Dashboard Pengurusan SPM NEGERI SELANGOR", layout="wide")
 
+# ===== SEMBUNYI BUTTON FORK + GITHUB + FOOTER START =====
+st.markdown("""
+<style>
+#MainMenu {visibility: hidden;} /* Sembunyi menu 3 titik */
+header {visibility: hidden;} /* Sembunyi bar atas Fork + Github */
+footer {visibility: hidden;} /* Sembunyi "Made with Streamlit" kat bawah */
+</style>
+""", unsafe_allow_html=True)
+# ===== HABIS =====
+
 @st.cache_data
 def load_data():
     df_jadual = pd.read_excel('JADUAL PEPERISAAN SPM 2026.xlsx')
@@ -24,7 +34,7 @@ def load_data():
 df_jadual, df_nama, df_pusat, df_bilik, df_full = load_data()
 st.markdown("---") # Garisan pemisah
 
-st.markdown("---") 
+st.markdown("---")
 
 st.markdown("---")
 NAMA_ADMIN = "Akashah bin Ismail"
@@ -35,20 +45,20 @@ col_logo, col_title = st.columns([1, 5])
 
 with col_logo:
     # GAMBAR YANG KAU UPLOAD TADI
-    st.image("logo.png", width=100) 
+    st.image("logo.png", width=100)
 
 with col_title:
     # TUKAR WARNA BACKGROUND
     st.markdown("""
     <style>
-    .stApp {
-        background-color: #E6F3FF;  /* Warna biru muda */
+   .stApp {
+        background-color: #E6F3FF; /* Warna biru muda */
     }
     </style>
     """, unsafe_allow_html=True)
 
     st.title("📊 Dashboard Pengurusan SPM 2026")
-    st.write(f"**Nama:** {NAMA_ADMIN} | **Jawatan:** {JAWATAN_ADMIN}")
+    st.write(f"**Nama:** {AKASHAH BIN ISMAIL} | **Jawatan:** {PEGAWAI MEJA SPM 2026}")
 
 st.write("---")
 # ===== HABIS HEADER =====
@@ -57,7 +67,7 @@ col1, col2, col3 = st.columns(3)
 with col1: st.metric("Jumlah Pusat", df_nama['NO PUSAT'].nunique())
 with col2: st.metric("Jumlah Bilik Kebal", len(df_bilik))
 with col3: st.metric("Jumlah Subjek", df_jadual['KOD MATA PELAJARAN'].nunique())
-    
+
 # BUTTON PENGURUSAN CALON
 st.markdown("---")
 
@@ -79,7 +89,7 @@ if st.session_state.get("show_pw", False):
             cancel = st.form_submit_button("Batal")
 
         if submit:
-            if pw == "spmB":  # <--- TUKAR PASSWORD SINI
+            if pw == "spmB": # <--- TUKAR PASSWORD SINI
                 st.session_state.show_pw = False
                 st.markdown('<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec">', unsafe_allow_html=True)
                 st.success("Password betul! Membuka...")
