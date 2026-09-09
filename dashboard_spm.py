@@ -127,15 +127,43 @@ with tab3:
 
 with tab4:
     st.subheader("🔍 Carian Mata Pelajaran")
-    carian_mp = st.text_input("Cari Kod atau Nama Mata Pelajaran")
+    st.write("Cari berdasarkan **Kod, Nama dan Kertas**")
+    
+    col_cari1, col_cari2 = st.columns([2, 1])
+    
+    with col_cari1:
+        carian_mp = st.text_input(
+            "1. Kod atau Nama Mata Pelajaran", 
+            placeholder="Contoh: 2611 atau SEJARAH atau BAHASA MELAYU"
+        )
+    
+    with col_cari2:
+        pilihan_kertas = st.selectbox(
+            "2. Pilih Kertas", 
+            options=["Semua", "1", "2", "3", "4"],
+            index=0
+        )
+    
     if carian_mp:
+        # Filter ikut kod/nama dulu
         mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
         mask_nama = df_full['MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
         hasil_mp = df_full[mask_kod | mask_nama]
+        
+        # Filter ikut kertas pulak kalau pilih selain "Semua"
+        if pilihan_kertas != "Semua":
+            if 'KERTAS' in hasil_mp.columns:
+                hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
+            else:
+                st.warning("Column 'KERTAS' tak dijumpai dalam excel. Sila check nama column.")
+
         if not hasil_mp.empty:
+            st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat** untuk carian '{carian_mp}' Kertas {pilihan_kertas}")
             st.dataframe(hasil_mp, use_container_width=True, hide_index=True)
         else:
-            st.warning(f"Tiada data untuk: '{carian_mp}'")
+            st.warning(f"❌ Tiada data untuk: '{carian_mp}' Kertas {pilihan_kertas}")
+    else:
+        st.info("Sila masukkan Kod atau Nama Mata Pelajaran untuk mula mencari")
 
 with tab5:
     st.subheader("Analisis Ringkas")
