@@ -5,11 +5,11 @@ st.set_page_config(page_title="Dashboard Pengurusan SPM NEGERI SELANGOR", layout
 
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;} 
-    footer {visibility: hidden;} 
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     header {visibility: hidden;}
     [data-testid="stHeader"] {display: none;}
-    .stApp {background-color: #E6F3FF;}
+   .stApp {background-color: #E6F3FF;}
     </style>
 """, unsafe_allow_html=True)
 
@@ -29,9 +29,22 @@ def load_data():
 
     df_temp = pd.merge(df_jadual, df_pusat, on='KOD MATA PELAJARAN', how='left')
     df_full = pd.merge(df_temp, df_nama, on='NO PUSAT', how='left')
-    
-    # BUANG KOD MATA PELAJARAN, LETAK NAMA SEKOLAH DEPAN
-    cols_depan = ['NAMA SEKOLAH', 'NO PUSAT', 'MASA MENJAWAB', 'MATA PELAJARAN', 'KERTAS']
+
+    # DEBUG: TENGOK NAMA COLUMN SEBENAR
+    # st.write("Column dalam df_full:", df_full.columns.tolist()) # Boleh buka ni untuk check
+
+    # CARI COLUMN YANG BETUL. KALAU TAKDE KITA SKIP
+    nama_sekolah_col = 'NAMA SEKOLAH' if 'NAMA SEKOLAH' in df_full.columns else 'NAMA PUSAT'
+    masa_col = 'MASA MENJAWAB' if 'MASA MENJAWAB' in df_full.columns else 'MASA'
+
+    cols_depan = []
+    if nama_sekolah_col in df_full.columns: cols_depan.append(nama_sekolah_col)
+    if 'NO PUSAT' in df_full.columns: cols_depan.append('NO PUSAT')
+    if masa_col in df_full.columns: cols_depan.append(masa_col)
+    if 'MATA PELAJARAN' in df_full.columns: cols_depan.append('MATA PELAJARAN')
+    if 'KERTAS' in df_full.columns: cols_depan.append('KERTAS')
+
+    # BUANG KOD MATA PELAJARAN & SUSUN SEMULA
     cols_lain = [c for c in df_full.columns if c not in cols_depan + ['KOD MATA PELAJARAN']]
     df_full = df_full[cols_depan + cols_lain]
 
@@ -101,20 +114,20 @@ with tab4:
     st.subheader("🔍 Carian Mata Pelajaran")
     st.write("Cari berdasarkan **Kod, Nama dan Kertas**")
     col_cari1, col_cari2 = st.columns([2, 1])
-    with col_cari1: carian_mp = st.text_input("1. Kod atau Nama Mata Pelajaran", placeholder="Contoh: 2611 atau SEJARAH atau BAHASA MELAYU")
+    with col_cari1: carian_mp = st.text_input("1. Kod atau Nama Mata Pelajaran", placeholder="Contoh: 2611 atau SEJARAH")
     with col_cari2: pilihan_kertas = st.selectbox("2. Pilih Kertas", options=["Semua", "1", "2", "3", "4"], index=0)
-    
+
     if carian_mp:
-        mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
+        mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False) if 'KOD MATA PELAJARAN' in df_full.columns else pd.Series([False]*len(df_full))
         mask_nama = df_full['MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
         hasil_mp = df_full[mask_kod | mask_nama]
-        
-        if pilihan_kertas != "Semua":
-            if 'KERTAS' in hasil_mp.columns: hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
+
+        if pilihan_kertas!= "Semua" and 'KERTAS' in hasil_mp.columns:
+            hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
 
         if not hasil_mp.empty:
             st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat** untuk carian '{carian_mp}' Kertas {pilihan_kertas}")
-            st.dataframe(hasil_mp, use_container_width=True, hide_index=True) # TABLE NI SEKARANG DAH ADA NAMA SEKOLAH DEPAN
+            st.dataframe(hasil_mp, use_container_width=True, hide_index=True)
         else: st.warning(f"❌ Tiada data untuk: '{carian_mp}' Kertas {pilihan_kertas}")
     else: st.info("Sila masukkan Kod atau Nama Mata Pelajaran untuk mula mencari")
 
