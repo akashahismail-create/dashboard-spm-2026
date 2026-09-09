@@ -126,15 +126,15 @@ with tab3:
     st.dataframe(df_full, use_container_width=True, hide_index=True)
 
 with tab4:
-    st.subheader("🔍 Carian Mengikut Sekolah")
-    st.write("Cari jadual peperiksaan berdasarkan **Nama Sekolah**")
+    st.subheader("🔍 Carian Mata Pelajaran")
+    st.write("Cari berdasarkan **Kod, Nama dan Kertas**")
     
     col_cari1, col_cari2 = st.columns([2, 1])
     
     with col_cari1:
-        carian_sekolah = st.text_input(
-            "1. Nama Sekolah", 
-            placeholder="Contoh: SMK KEBANGSAAN SUBANG JAYA atau SUBANG"
+        carian_mp = st.text_input(
+            "1. Kod atau Nama Mata Pelajaran", 
+            placeholder="Contoh: 2611 atau SEJARAH atau BAHASA MELAYU"
         )
     
     with col_cari2:
@@ -144,10 +144,11 @@ with tab4:
             index=0
         )
     
-    if carian_sekolah:
-        # Filter ikut NAMA SEKOLAH dulu
-        mask_sekolah = df_full['NAMA SEKOLAH'].astype(str).str.contains(carian_sekolah, case=False, na=False)
-        hasil_mp = df_full[mask_sekolah]
+    if carian_mp:
+        # Filter ikut kod/nama dulu
+        mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
+        mask_nama = df_full['MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
+        hasil_mp = df_full[mask_kod | mask_nama]
         
         # Filter ikut kertas pulak kalau pilih selain "Semua"
         if pilihan_kertas != "Semua":
@@ -157,12 +158,12 @@ with tab4:
                 st.warning("Column 'KERTAS' tak dijumpai dalam excel. Sila check nama column.")
 
         if not hasil_mp.empty:
-            st.success(f"✅ Dijumpai **{len(hasil_mp)} jadual** untuk '{carian_sekolah}' Kertas {pilihan_kertas}")
+            st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat** untuk carian '{carian_mp}' Kertas {pilihan_kertas}")
             st.dataframe(hasil_mp, use_container_width=True, hide_index=True)
         else:
-            st.warning(f"❌ Tiada data untuk sekolah: '{carian_sekolah}'")
+            st.warning(f"❌ Tiada data untuk: '{carian_mp}' Kertas {pilihan_kertas}")
     else:
-        st.info("Sila masukkan Nama Sekolah untuk mula mencari")
+        st.info("Sila masukkan Kod atau Nama Mata Pelajaran untuk mula mencari")
 
 with tab5:
     st.subheader("Analisis Ringkas")
