@@ -30,13 +30,6 @@ def load_data():
 
     df_temp = pd.merge(df_jadual, df_pusat, on='KOD MATA PELAJARAN', how='left')
     df_full = pd.merge(df_temp, df_nama, on='NO PUSAT', how='left')
-
-    # SUSUN COLUMN: LETAK NAMA SEKOLAH DEPAN. JANGAN BUANG KOD DULU SEBAB NAK BUAT CARIAN
-    nama_sekolah_col = 'NAMA SEKOLAH' if 'NAMA SEKOLAH' in df_full.columns else 'NAMA PUSAT'
-    cols_depan = [nama_sekolah_col, 'NO PUSAT', 'KOD MATA PELAJARAN', 'MATA PELAJARAN', 'KERTAS', 'MASA MENJAWAB']
-    cols_lain = [c for c in df_full.columns if c not in cols_depan]
-    df_full = df_full[cols_depan + cols_lain]
-
     return df_jadual, df_nama, df_pusat, df_bilik, df_full
 
 df_jadual, df_nama, df_pusat, df_bilik, df_full = load_data()
@@ -65,12 +58,15 @@ st.markdown("---")
 # ===== LINK =====
 LINK_CALON = "https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec"
 LINK_PENGURUSAN = "https://drive.google.com/drive/folders/193ELWVyPDORTVE7ZSVe2B3rsZILkg7f6?usp=drive_link"
-PASSWORD = "spmB"
+
+PASSWORD = "spmB" # Tukar password sini je
 
 col_kosong, col_butang1, col_butang2 = st.columns([3, 1, 1])
+
 with col_butang1:
     if st.button("📝 CALON", key="btn_calon", use_container_width=True, type="primary"):
         st.session_state.show_pw_calon = True
+
 with col_butang2:
     if st.button("📊 PENGURUSAN SPM", key="btn_urus", use_container_width=True, type="secondary"):
         st.session_state.show_pw_urus = True
@@ -83,13 +79,16 @@ if st.session_state.get("show_pw_calon", False):
         col1, col2 = st.columns(2)
         with col1: submit = st.form_submit_button("Masuk")
         with col2: cancel = st.form_submit_button("Batal")
+
         if submit:
             if pw == PASSWORD:
                 st.session_state.show_pw_calon = False
                 st.success("Password betul!")
                 st.link_button("🚀 BUKA PORTAL CALON", LINK_CALON, use_container_width=True, type="primary")
-            else: st.error("Password salah!")
-        if cancel: st.session_state.show_pw_calon = False
+            else:
+                st.error("Password salah!")
+        if cancel:
+            st.session_state.show_pw_calon = False
 
 # ===== POPUP PASSWORD UNTUK PENGURUSAN =====
 if st.session_state.get("show_pw_urus", False):
@@ -99,15 +98,19 @@ if st.session_state.get("show_pw_urus", False):
         col1, col2 = st.columns(2)
         with col1: submit = st.form_submit_button("Masuk")
         with col2: cancel = st.form_submit_button("Batal")
+
         if submit:
             if pw == PASSWORD:
                 st.session_state.show_pw_urus = False
                 st.success("Password betul!")
                 st.link_button("🚀 BUKA FOLDER PENGURUSAN", LINK_PENGURUSAN, use_container_width=True, type="secondary")
-            else: st.error("Password salah!")
-        if cancel: st.session_state.show_pw_urus = False
+            else:
+                st.error("Password salah!")
+        if cancel:
+            st.session_state.show_pw_urus = False
 
 st.write("---")
+
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏫 Senarai Pusat", "🔒 Senarai Bilik Kebal", "📅 Jadual", "🔍 Carian", "📈 Analisis"])
 
 with tab1:
@@ -120,35 +123,43 @@ with tab2:
 
 with tab3:
     st.subheader("Jadual Peperiksaan + Maklumat Pusat")
-    # BUANG KOD MATA PELAJARAN UNTUK TAB JADUAL JUGA
-    df_papar_jadual = df_full.drop(columns=['KOD MATA PELAJARAN'], errors='ignore')
-    st.dataframe(df_papar_jadual, use_container_width=True, hide_index=True)
+    st.dataframe(df_full, use_container_width=True, hide_index=True)
 
 with tab4:
     st.subheader("🔍 Carian Mata Pelajaran")
     st.write("Cari berdasarkan **Kod, Nama dan Kertas**")
     
     col_cari1, col_cari2 = st.columns([2, 1])
+    
     with col_cari1:
-        carian_mp = st.text_input("1. Kod atau Nama Mata Pelajaran", placeholder="Contoh: 1103 atau SEJARAH")
+        carian_mp = st.text_input(
+            "1. Kod atau Nama Mata Pelajaran", 
+            placeholder="Contoh: 2611 atau SEJARAH atau BAHASA MELAYU"
+        )
+    
     with col_cari2:
-        pilihan_kertas = st.selectbox("2. Pilih Kertas", options=["Semua", "1", "2", "3", "4"], index=0)
+        pilihan_kertas = st.selectbox(
+            "2. Pilih Kertas", 
+            options=["Semua", "1", "2", "3", "4"],
+            index=0
+        )
     
     if carian_mp:
-        # CARI GUNA KOD DULU
+        # Filter ikut kod/nama dulu
         mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
         mask_nama = df_full['MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
         hasil_mp = df_full[mask_kod | mask_nama]
         
-        if pilihan_kertas != "Semua" and 'KERTAS' in hasil_mp.columns:
-            hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
+        # Filter ikut kertas pulak kalau pilih selain "Semua"
+        if pilihan_kertas != "Semua":
+            if 'KERTAS' in hasil_mp.columns:
+                hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
+            else:
+                st.warning("Column 'KERTAS' tak dijumpai dalam excel. Sila check nama column.")
 
         if not hasil_mp.empty:
             st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat** untuk carian '{carian_mp}' Kertas {pilihan_kertas}")
-            
-            # BARU BUANG KOD MATA PELAJARAN SEBELUM PAPAR KE TABLE
-            hasil_papar = hasil_mp.drop(columns=['KOD MATA PELAJARAN'], errors='ignore')
-            st.dataframe(hasil_papar, use_container_width=True, hide_index=True)
+            st.dataframe(hasil_mp, use_container_width=True, hide_index=True)
         else:
             st.warning(f"❌ Tiada data untuk: '{carian_mp}' Kertas {pilihan_kertas}")
     else:
