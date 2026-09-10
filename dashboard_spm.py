@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 st.set_page_config(page_title="Dashboard Pengurusan SPM NEGERI SELANGOR", layout="wide")
 
-# ===== HILANGKAN BAR STREAMLIT + BG BIRU MUDA =====
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;} 
@@ -11,6 +11,10 @@ st.markdown("""
     header {visibility: hidden;}
     [data-testid="stHeader"] {display: none;}
     .stApp {background-color: #E6F3FF;}
+    /* Warna merah untuk tarikh lepas */
+    .tarikh-lepas {
+        background-color: #FFCDD2 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -30,6 +34,11 @@ def load_data():
 
     df_temp = pd.merge(df_jadual, df_pusat, on='KOD MATA PELAJARAN', how='left')
     df_full = pd.merge(df_temp, df_nama, on='NO PUSAT', how='left')
+    
+    # TUKAR TARIKH KEPADA DATETIME
+    if 'TARIKH' in df_full.columns:
+        df_full['TARIKH'] = pd.to_datetime(df_full['TARIKH'], errors='coerce')
+        
     return df_jadual, df_nama, df_pusat, df_bilik, df_full
 
 df_jadual, df_nama, df_pusat, df_bilik, df_full = load_data()
@@ -37,41 +46,30 @@ df_jadual, df_nama, df_pusat, df_bilik, df_full = load_data()
 NAMA_ADMIN = "Akashah bin Ismail"
 JAWATAN_ADMIN = "Pegawai meja SPM Negeri Selangor"
 
-# ===== HEADER =====
 col_logo, col_title = st.columns([1, 5])
-with col_logo: 
-    st.image("logo.png", width=200)
+with col_logo: st.image("logo.png", width=200)
 with col_title:
     st.title(" Dashboard Pengurusan SPM 2026")
     st.write(f"**Nama:** {NAMA_ADMIN}")
     st.write(f"**Jawatan:** {JAWATAN_ADMIN}")
 
 st.write("---")
-
 col1, col2, col3 = st.columns(3)
 with col1: st.metric("Jumlah Pusat", df_nama['NO PUSAT'].nunique())
 with col2: st.metric("Jumlah Bilik Kebal", len(df_bilik))
 with col3: st.metric("Jumlah Subjek", df_jadual['KOD MATA PELAJARAN'].nunique())
-
 st.markdown("---")
 
-# ===== LINK =====
 LINK_CALON = "https://script.google.com/macros/s/AKfycbwav3jbWQEkTW2yTK9PnanlItxPM5NpCHADLNb_BRjY4hmsale257tSqMsRTdqv88HA/exec"
 LINK_PENGURUSAN = "https://drive.google.com/drive/folders/193ELWVyPDORTVE7ZSVe2B3rsZILkg7f6?usp=drive_link"
-
-PASSWORD = "spmB" # Tukar password sini je
+PASSWORD = "spmB"
 
 col_kosong, col_butang1, col_butang2 = st.columns([3, 1, 1])
-
 with col_butang1:
-    if st.button("📝 CALON", key="btn_calon", use_container_width=True, type="primary"):
-        st.session_state.show_pw_calon = True
-
+    if st.button("📝 CALON", key="btn_calon", use_container_width=True, type="primary"): st.session_state.show_pw_calon = True
 with col_butang2:
-    if st.button("📊 PENGURUSAN SPM", key="btn_urus", use_container_width=True, type="secondary"):
-        st.session_state.show_pw_urus = True
+    if st.button("📊 PENGURUSAN SPM", key="btn_urus", use_container_width=True, type="secondary"): st.session_state.show_pw_urus = True
 
-# ===== POPUP PASSWORD UNTUK CALON =====
 if st.session_state.get("show_pw_calon", False):
     with st.form("form_password_calon"):
         st.write("### 🔒 Password Portal CALON")
@@ -79,18 +77,11 @@ if st.session_state.get("show_pw_calon", False):
         col1, col2 = st.columns(2)
         with col1: submit = st.form_submit_button("Masuk")
         with col2: cancel = st.form_submit_button("Batal")
-
         if submit:
-            if pw == PASSWORD:
-                st.session_state.show_pw_calon = False
-                st.success("Password betul!")
-                st.link_button("🚀 BUKA PORTAL CALON", LINK_CALON, use_container_width=True, type="primary")
-            else:
-                st.error("Password salah!")
-        if cancel:
-            st.session_state.show_pw_calon = False
+            if pw == PASSWORD: st.session_state.show_pw_calon = False; st.success("Password betul!"); st.link_button("🚀 BUKA PORTAL CALON", LINK_CALON, use_container_width=True, type="primary")
+            else: st.error("Password salah!")
+        if cancel: st.session_state.show_pw_calon = False
 
-# ===== POPUP PASSWORD UNTUK PENGURUSAN =====
 if st.session_state.get("show_pw_urus", False):
     with st.form("form_password_urus"):
         st.write("### 🔒 Password Folder PENGURUSAN")
@@ -98,73 +89,63 @@ if st.session_state.get("show_pw_urus", False):
         col1, col2 = st.columns(2)
         with col1: submit = st.form_submit_button("Masuk")
         with col2: cancel = st.form_submit_button("Batal")
-
         if submit:
-            if pw == PASSWORD:
-                st.session_state.show_pw_urus = False
-                st.success("Password betul!")
-                st.link_button("🚀 BUKA FOLDER PENGURUSAN", LINK_PENGURUSAN, use_container_width=True, type="secondary")
-            else:
-                st.error("Password salah!")
-        if cancel:
-            st.session_state.show_pw_urus = False
+            if pw == PASSWORD: st.session_state.show_pw_urus = False; st.success("Password betul!"); st.link_button("🚀 BUKA FOLDER PENGURUSAN", LINK_PENGURUSAN, use_container_width=True, type="secondary")
+            else: st.error("Password salah!")
+        if cancel: st.session_state.show_pw_urus = False
 
 st.write("---")
-
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["🏫 Senarai Pusat", "🔒 Senarai Bilik Kebal", "📅 Jadual", "🔍 Carian", "📈 Analisis"])
 
-with tab1:
-    st.subheader("Senarai Pusat Peperiksaan")
-    st.dataframe(df_nama, use_container_width=True, hide_index=True)
-
-with tab2:
-    st.subheader("Senarai Bilik Kebal")
-    st.dataframe(df_bilik, use_container_width=True, hide_index=True)
-
-with tab3:
-    st.subheader("Jadual Peperiksaan + Maklumat Pusat")
-    st.dataframe(df_full, use_container_width=True, hide_index=True)
+with tab1: st.subheader("Senarai Pusat Peperiksaan"); st.dataframe(df_nama, use_container_width=True, hide_index=True)
+with tab2: st.subheader("Senarai Bilik Kebal"); st.dataframe(df_bilik, use_container_width=True, hide_index=True)
+with tab3: st.subheader("Jadual Peperiksaan + Maklumat Pusat"); st.dataframe(df_full, use_container_width=True, hide_index=True)
 
 with tab4:
     st.subheader("🔍 Carian Mata Pelajaran")
     
-    col_cari1, col_cari2 = st.columns([2, 1])
+    col_cari1, col_cari2, col_cari3 = st.columns([2, 1, 1])
     
     with col_cari1:
-        carian_mp = st.text_input(
-            "1. Masukkan Kod Mata Pelajaran", 
-            placeholder="Contoh: 1103"
-        )
-    
+        carian_mp = st.text_input("1. Kod Mata Pelajaran", placeholder="Contoh: 1103")
     with col_cari2:
-        pilihan_kertas = st.selectbox(
-            "2. Pilih Kertas", 
-            options=["Semua", "1", "2", "3", "4"],
-            index=0
-        )
+        pilihan_kertas = st.selectbox("2. Pilih Kertas", options=["Semua", "1", "2", "3", "4"], index=0)
+    with col_cari3:
+        # UPDATE: DROPDOWN DAERAH
+        senarai_daerah = ['Semua'] + sorted(df_pusat['KOD KAWASAN'].dropna().unique().tolist()) if 'KOD KAWASAN' in df_pusat.columns else ['Semua']
+        pilihan_daerah = st.selectbox("3. Pilih Daerah", options=senarai_daerah, index=0)
     
     if carian_mp:
-        # Filter ikut kod dulu
         mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
         hasil_mp = df_full[mask_kod]
         
-        # Filter ikut kertas pulak
         if pilihan_kertas != "Semua" and 'KERTAS' in hasil_mp.columns:
             hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
+            
+        # FILTER DAERAH
+        if pilihan_daerah != "Semua" and 'KOD KAWASAN' in hasil_mp.columns:
+            hasil_mp = hasil_mp[hasil_mp['KOD KAWASAN'] == pilihan_daerah]
 
         if not hasil_mp.empty:
-            st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat** untuk Kod {carian_mp} Kertas {pilihan_kertas}")
+            st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat**")
             
-            # PAPAR 4 COLUMN SAHAJA: TARIKH, MASA, NO PUSAT, NAMA SEKOLAH
             nama_sekolah_col = 'NAMA SEKOLAH' if 'NAMA SEKOLAH' in hasil_mp.columns else 'NAMA PUSAT'
             masa_col = 'MASA MENJAWAB' if 'MASA MENJAWAB' in hasil_mp.columns else 'MASA'
             
-            cols_untuk_papar = ['TARIKH', masa_col, 'NO PUSAT', nama_sekolah_col]
-            cols_untuk_papar = [c for c in cols_untuk_papar if c in hasil_mp.columns] # Check kalau column tu ada
+            cols_untuk_papar = ['TARIKH', masa_col, 'NO PUSAT', nama_sekolah_col, 'KOD KAWASAN']
+            cols_untuk_papar = [c for c in cols_untuk_papar if c in hasil_mp.columns]
             
-            st.dataframe(hasil_mp[cols_untuk_papar], use_container_width=True, hide_index=True)
+            # FUNCTION UNTUK MERAHKAN TARIKH LEPAS
+            def highlight_past(row):
+                hari_ini = pd.Timestamp.now().normalize()
+                if 'TARIKH' in row and pd.notna(row['TARIKH']):
+                    if row['TARIKH'].normalize() < hari_ini:
+                        return ['background-color: #FFCDD2'] * len(row)
+                return [''] * len(row)
+            
+            st.dataframe(hasil_mp[cols_untuk_papar].style.apply(highlight_past, axis=1), use_container_width=True, hide_index=True)
         else:
-            st.warning(f"❌ Tiada data untuk: Kod '{carian_mp}' Kertas {pilihan_kertas}")
+            st.warning(f"❌ Tiada data untuk carian ini")
     else:
         st.info("Sila masukkan Kod Mata Pelajaran untuk mula mencari")
 
