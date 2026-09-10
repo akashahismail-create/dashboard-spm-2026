@@ -31,7 +31,6 @@ def load_data():
     df_temp = pd.merge(df_jadual, df_pusat, on='KOD MATA PELAJARAN', how='left')
     df_full = pd.merge(df_temp, df_nama, on='NO PUSAT', how='left')
     
-    # TUKAR TARIKH KEPADA DATETIME
     if 'TARIKH' in df_full.columns:
         df_full['TARIKH'] = pd.to_datetime(df_full['TARIKH'], errors='coerce')
         
@@ -107,11 +106,11 @@ with tab4:
     with col_cari2:
         pilihan_kertas = st.selectbox("2. Pilih Kertas", options=["Semua", "1", "2", "3", "4"], index=0)
     with col_cari3:
-        # BUAT DROPDOWN NAMA DAERAH
-        if 'KOD KAWASAN' in df_pusat.columns and 'NAMA KAWASAN' in df_pusat.columns:
-            df_daerah = df_pusat[['KOD KAWASAN', 'NAMA KAWASAN']].drop_duplicates().sort_values('NAMA KAWASAN')
+        # FIX: GUNA COLUMN DAERAH
+        if 'KOD KAWASAN' in df_pusat.columns and 'DAERAH' in df_pusat.columns:
+            df_daerah = df_pusat[['KOD KAWASAN', 'DAERAH']].drop_duplicates().dropna().sort_values('DAERAH')
             senarai_daerah = {'Semua': 'Semua'}
-            senarai_daerah.update(dict(zip(df_daerah['NAMA KAWASAN'], df_daerah['KOD KAWASAN'])))
+            senarai_daerah.update(dict(zip(df_daerah['DAERAH'], df_daerah['KOD KAWASAN'])))
         else:
             senarai_daerah = {'Semua': 'Semua'}
             
@@ -125,7 +124,6 @@ with tab4:
         if pilihan_kertas != "Semua" and 'KERTAS' in hasil_mp.columns:
             hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
             
-        # FILTER DAERAH GUNA KOD
         if pilihan_daerah_kod != "Semua" and 'KOD KAWASAN' in hasil_mp.columns:
             hasil_mp = hasil_mp[hasil_mp['KOD KAWASAN'] == pilihan_daerah_kod]
 
@@ -136,10 +134,9 @@ with tab4:
             nama_sekolah_col = 'NAMA SEKOLAH' if 'NAMA SEKOLAH' in hasil_mp.columns else 'NAMA PUSAT'
             masa_col = 'MASA MENJAWAB' if 'MASA MENJAWAB' in hasil_mp.columns else 'MASA'
             
-            cols_untuk_papar = ['TARIKH', masa_col, 'NO PUSAT', nama_sekolah_col, 'KOD KAWASAN']
+            cols_untuk_papar = ['TARIKH', masa_col, 'NO PUSAT', nama_sekolah_col, 'DAERAH']
             cols_untuk_papar = [c for c in cols_untuk_papar if c in hasil_mp.columns]
             
-            # FUNCTION MERAHKAN TARIKH LEPAS
             def highlight_past(row):
                 hari_ini = pd.Timestamp.now().normalize()
                 if 'TARIKH' in row and pd.notna(row['TARIKH']):
