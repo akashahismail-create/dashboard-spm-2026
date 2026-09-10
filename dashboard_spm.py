@@ -26,13 +26,40 @@ def load_data():
         st.error(f"File tak jumpa: {e}. Sila upload ke Github")
         st.stop()
 
+    # CLEAN COLUMN NAME - BUANG SPACE
     for df in [df_jadual, df_nama, df_pusat, df_bilik]:
         df.columns = df.columns.str.upper().str.strip()
 
-    # MERGE UNTUK DAPAT DAERAH
-    if 'KOD KAWASAN' in df_pusat.columns and 'KOD KAWASAN' in df_bilik.columns:
-        df_pusat = pd.merge(df_pusat, df_bilik[['KOD KAWASAN', 'DAERAH']], on='KOD KAWASAN', how='left')
+    # CHECK COLUMN PENTING WUJUD
+    required_cols = {
+        'df_jadual': ['KOD MATA PELAJARAN'],
+        'df_pusat': ['KOD MATA PELAJARAN', 'KOD KAWASAN', 'NO PUSAT'],
+        'df_nama': ['NO PUSAT'],
+        'df_bilik': ['KOD KAWASAN', 'DAERAH']
+    }
+    
+    if not all(col in df_jadual.columns for col in required_cols['df_jadual']):
+        st.error(f"ERROR: Column {required_cols['df_jadual']} takde dalam JADUAL PEPERISAAN SPM 2026.xlsx")
+        st.stop()
+    if not all(col in df_pusat.columns for col in required_cols['df_pusat']):
+        st.error(f"ERROR: Column {required_cols['df_pusat']} takde dalam senarai pusat.xlsx")
+        st.stop()
+    if not all(col in df_nama.columns for col in required_cols['df_nama']):
+        st.error(f"ERROR: Column {required_cols['df_nama']} takde dalam nama sekolah.xlsx")
+        st.stop()
 
+    # TUKAR JADI TEXT DAN BUANG SPACE SEBELUM MERGE
+    df_jadual['KOD MATA PELAJARAN'] = df_jadual['KOD MATA PELAJARAN'].astype(str).str.strip()
+    df_pusat['KOD MATA PELAJARAN'] = df_pusat['KOD MATA PELAJARAN'].astype(str).str.strip()
+    df_pusat['KOD KAWASAN'] = df_pusat['KOD KAWASAN'].astype(str).str.strip()
+    df_pusat['NO PUSAT'] = df_pusat['NO PUSAT'].astype(str).str.strip()
+    df_nama['NO PUSAT'] = df_nama['NO PUSAT'].astype(str).str.strip()
+    df_bilik['KOD KAWASAN'] = df_bilik['KOD KAWASAN'].astype(str).str.strip()
+
+    # MERGE UNTUK DAPAT DAERAH
+    df_pusat = pd.merge(df_pusat, df_bilik[['KOD KAWASAN', 'DAERAH']], on='KOD KAWASAN', how='left')
+
+    # MERGE UTAMA
     df_temp = pd.merge(df_jadual, df_pusat, on='KOD MATA PELAJARAN', how='left')
     df_full = pd.merge(df_temp, df_nama, on='NO PUSAT', how='left')
     
@@ -107,13 +134,14 @@ with tab4:
     with col_cari1: carian_mp = st.text_input("1. Kod Mata Pelajaran", placeholder="Contoh: 1103")
     with col_cari2: pilihan_kertas = st.selectbox("2. Pilih Kertas", options=["Semua", "1", "2", "3", "4"], index=0)
     with col_cari3:
-        if 'KOD KAWASAN' in df_pusat.columns and 'DAERAH' in df_pusat.columns:
+        if 'DAERAH' in df_pusat.columns:
             df_daerah = df_pusat[['KOD KAWASAN', 'DAERAH']].drop_duplicates().dropna().sort_values('DAERAH')
             senarai_daerah = {'Semua': 'Semua'}
             senarai_daerah.update(dict(zip(df_daerah['DAERAH'], df_daerah['KOD KAWASAN'])))
         else: senarai_daerah = {'Semua': 'Semua'}
         pilihan_daerah_nama = st.selectbox("3. Pilih Daerah", options=list(senarai_daerah.keys()), index=0)
         pilihan_daerah_kod = senarai_daerah[pilihan_daerah_nama]
+    
     if carian_mp:
         mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
         hasil_mp = df_full[mask_kod]
@@ -139,7 +167,6 @@ with tab5:
     st.subheader("Analisis Ringkas")
     if 'DAERAH' in df_pusat.columns: st.bar_chart(df_pusat['DAERAH'].value_counts())
 
-# TAB BARU UNTUK EDIT
 with tab6:
     st.subheader("✏️ Edit Data Excel")
     st.warning("⚠️ Perubahan di sini TIDAK auto save ke Github. Kena download dan upload manual balik.")
@@ -154,7 +181,6 @@ with tab6:
     st.info("Boleh klik terus dalam table untuk edit. Lepas edit tekan Download.")
     edited_df = st.data_editor(df_edit, use_container_width=True, num_rows="dynamic")
     
-    # BUTTON DOWNLOAD FILE YANG DAH EDIT
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         edited_df.to_excel(writer, index=False, sheet_name='Sheet1')
