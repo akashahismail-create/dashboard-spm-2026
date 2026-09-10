@@ -11,10 +11,6 @@ st.markdown("""
     header {visibility: hidden;}
     [data-testid="stHeader"] {display: none;}
     .stApp {background-color: #E6F3FF;}
-    /* Warna merah untuk tarikh lepas */
-    .tarikh-lepas {
-        background-color: #FFCDD2 !important;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -111,9 +107,16 @@ with tab4:
     with col_cari2:
         pilihan_kertas = st.selectbox("2. Pilih Kertas", options=["Semua", "1", "2", "3", "4"], index=0)
     with col_cari3:
-        # UPDATE: DROPDOWN DAERAH
-        senarai_daerah = ['Semua'] + sorted(df_pusat['KOD KAWASAN'].dropna().unique().tolist()) if 'KOD KAWASAN' in df_pusat.columns else ['Semua']
-        pilihan_daerah = st.selectbox("3. Pilih Daerah", options=senarai_daerah, index=0)
+        # BUAT DROPDOWN NAMA DAERAH
+        if 'KOD KAWASAN' in df_pusat.columns and 'NAMA KAWASAN' in df_pusat.columns:
+            df_daerah = df_pusat[['KOD KAWASAN', 'NAMA KAWASAN']].drop_duplicates().sort_values('NAMA KAWASAN')
+            senarai_daerah = {'Semua': 'Semua'}
+            senarai_daerah.update(dict(zip(df_daerah['NAMA KAWASAN'], df_daerah['KOD KAWASAN'])))
+        else:
+            senarai_daerah = {'Semua': 'Semua'}
+            
+        pilihan_daerah_nama = st.selectbox("3. Pilih Daerah", options=list(senarai_daerah.keys()), index=0)
+        pilihan_daerah_kod = senarai_daerah[pilihan_daerah_nama]
     
     if carian_mp:
         mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
@@ -122,12 +125,13 @@ with tab4:
         if pilihan_kertas != "Semua" and 'KERTAS' in hasil_mp.columns:
             hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
             
-        # FILTER DAERAH
-        if pilihan_daerah != "Semua" and 'KOD KAWASAN' in hasil_mp.columns:
-            hasil_mp = hasil_mp[hasil_mp['KOD KAWASAN'] == pilihan_daerah]
+        # FILTER DAERAH GUNA KOD
+        if pilihan_daerah_kod != "Semua" and 'KOD KAWASAN' in hasil_mp.columns:
+            hasil_mp = hasil_mp[hasil_mp['KOD KAWASAN'] == pilihan_daerah_kod]
 
         if not hasil_mp.empty:
-            st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat**")
+            teks_daerah = "" if pilihan_daerah_nama == "Semua" else f" di {pilihan_daerah_nama}"
+            st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat** untuk Kod **{carian_mp}** Kertas **{pilihan_kertas}**{teks_daerah}")
             
             nama_sekolah_col = 'NAMA SEKOLAH' if 'NAMA SEKOLAH' in hasil_mp.columns else 'NAMA PUSAT'
             masa_col = 'MASA MENJAWAB' if 'MASA MENJAWAB' in hasil_mp.columns else 'MASA'
@@ -135,7 +139,7 @@ with tab4:
             cols_untuk_papar = ['TARIKH', masa_col, 'NO PUSAT', nama_sekolah_col, 'KOD KAWASAN']
             cols_untuk_papar = [c for c in cols_untuk_papar if c in hasil_mp.columns]
             
-            # FUNCTION UNTUK MERAHKAN TARIKH LEPAS
+            # FUNCTION MERAHKAN TARIKH LEPAS
             def highlight_past(row):
                 hari_ini = pd.Timestamp.now().normalize()
                 if 'TARIKH' in row and pd.notna(row['TARIKH']):
@@ -145,7 +149,7 @@ with tab4:
             
             st.dataframe(hasil_mp[cols_untuk_papar].style.apply(highlight_past, axis=1), use_container_width=True, hide_index=True)
         else:
-            st.warning(f"❌ Tiada data untuk carian ini")
+            st.warning(f"❌ Tiada data untuk Kod '{carian_mp}' Kertas {pilihan_kertas}")
     else:
         st.info("Sila masukkan Kod Mata Pelajaran untuk mula mencari")
 
