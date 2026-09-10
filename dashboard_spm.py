@@ -127,14 +127,13 @@ with tab3:
 
 with tab4:
     st.subheader("🔍 Carian Mata Pelajaran")
-    st.write("Cari berdasarkan **Kod, Nama dan Kertas**")
     
     col_cari1, col_cari2 = st.columns([2, 1])
     
     with col_cari1:
         carian_mp = st.text_input(
-            "1. Kod atau Nama Mata Pelajaran", 
-            placeholder="Contoh: 2611 atau SEJARAH atau BAHASA MELAYU"
+            "1. Masukkan Kod Mata Pelajaran", 
+            placeholder="Contoh: 1103"
         )
     
     with col_cari2:
@@ -145,25 +144,29 @@ with tab4:
         )
     
     if carian_mp:
-        # Filter ikut kod/nama dulu
+        # Filter ikut kod dulu
         mask_kod = df_full['KOD MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
-        mask_nama = df_full['MATA PELAJARAN'].astype(str).str.contains(carian_mp, case=False, na=False)
-        hasil_mp = df_full[mask_kod | mask_nama]
+        hasil_mp = df_full[mask_kod]
         
-        # Filter ikut kertas pulak kalau pilih selain "Semua"
-        if pilihan_kertas != "Semua":
-            if 'KERTAS' in hasil_mp.columns:
-                hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
-            else:
-                st.warning("Column 'KERTAS' tak dijumpai dalam excel. Sila check nama column.")
+        # Filter ikut kertas pulak
+        if pilihan_kertas != "Semua" and 'KERTAS' in hasil_mp.columns:
+            hasil_mp = hasil_mp[hasil_mp['KERTAS'].astype(str).str.contains(pilihan_kertas, case=False, na=False)]
 
         if not hasil_mp.empty:
-            st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat** untuk carian '{carian_mp}' Kertas {pilihan_kertas}")
-            st.dataframe(hasil_mp, use_container_width=True, hide_index=True)
+            st.success(f"✅ Dijumpai **{hasil_mp['NO PUSAT'].nunique()} pusat** untuk Kod {carian_mp} Kertas {pilihan_kertas}")
+            
+            # PAPAR 4 COLUMN SAHAJA: TARIKH, MASA, NO PUSAT, NAMA SEKOLAH
+            nama_sekolah_col = 'NAMA SEKOLAH' if 'NAMA SEKOLAH' in hasil_mp.columns else 'NAMA PUSAT'
+            masa_col = 'MASA MENJAWAB' if 'MASA MENJAWAB' in hasil_mp.columns else 'MASA'
+            
+            cols_untuk_papar = ['TARIKH', masa_col, 'NO PUSAT', nama_sekolah_col]
+            cols_untuk_papar = [c for c in cols_untuk_papar if c in hasil_mp.columns] # Check kalau column tu ada
+            
+            st.dataframe(hasil_mp[cols_untuk_papar], use_container_width=True, hide_index=True)
         else:
-            st.warning(f"❌ Tiada data untuk: '{carian_mp}' Kertas {pilihan_kertas}")
+            st.warning(f"❌ Tiada data untuk: Kod '{carian_mp}' Kertas {pilihan_kertas}")
     else:
-        st.info("Sila masukkan Kod atau Nama Mata Pelajaran untuk mula mencari")
+        st.info("Sila masukkan Kod Mata Pelajaran untuk mula mencari")
 
 with tab5:
     st.subheader("Analisis Ringkas")
