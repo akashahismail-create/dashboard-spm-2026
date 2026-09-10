@@ -28,6 +28,10 @@ def load_data():
     for df in [df_jadual, df_nama, df_pusat, df_bilik]:
         df.columns = df.columns.str.upper().str.strip()
 
+    # FIX PENTING: MERGE df_pusat DENGAN df_bilik UNTUK DAPAT DAERAH
+    if 'KOD KAWASAN' in df_pusat.columns and 'KOD KAWASAN' in df_bilik.columns:
+        df_pusat = pd.merge(df_pusat, df_bilik[['KOD KAWASAN', 'DAERAH']], on='KOD KAWASAN', how='left')
+
     df_temp = pd.merge(df_jadual, df_pusat, on='KOD MATA PELAJARAN', how='left')
     df_full = pd.merge(df_temp, df_nama, on='NO PUSAT', how='left')
     
@@ -106,13 +110,14 @@ with tab4:
     with col_cari2:
         pilihan_kertas = st.selectbox("2. Pilih Kertas", options=["Semua", "1", "2", "3", "4"], index=0)
     with col_cari3:
-        # FIX: GUNA COLUMN DAERAH
+        # SEKARANG df_pusat DAH ADA COLUMN DAERAH SEBAB DAH MERGE
         if 'KOD KAWASAN' in df_pusat.columns and 'DAERAH' in df_pusat.columns:
             df_daerah = df_pusat[['KOD KAWASAN', 'DAERAH']].drop_duplicates().dropna().sort_values('DAERAH')
             senarai_daerah = {'Semua': 'Semua'}
             senarai_daerah.update(dict(zip(df_daerah['DAERAH'], df_daerah['KOD KAWASAN'])))
         else:
             senarai_daerah = {'Semua': 'Semua'}
+            st.error("Column DAERAH tak dijumpai selepas merge")
             
         pilihan_daerah_nama = st.selectbox("3. Pilih Daerah", options=list(senarai_daerah.keys()), index=0)
         pilihan_daerah_kod = senarai_daerah[pilihan_daerah_nama]
@@ -153,7 +158,7 @@ with tab4:
 with tab5:
     st.subheader("Analisis Ringkas")
     if 'KOD KAWASAN' in df_pusat.columns:
-        st.bar_chart(df_pusat['KOD KAWASAN'].value_counts())
+        st.bar_chart(df_pusat['DAERAH'].value_counts())
 
 st.write("---")
 st.caption("akashah ismail")
