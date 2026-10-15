@@ -393,23 +393,20 @@ def load_reports_cached(file_mtime):
         try:
             with open(REPORTS_FILE, "r") as f:
                 reports = json.load(f)
-                # FIX KASHAH: Paksa betulkan SEMUA PPD ikut No Pusat - BH mesti Petaling Perdana, BA mesti Klang
-                fixed = False
+                # FIX: Jangan overwrite PPD valid - kekalkan PPD asal dari KP login
                 for r in reports:
                     no_pusat = str(r.get("no_pusat","")).upper().strip()
                     kod = no_pusat[:2] if len(no_pusat)>=2 else ""
-                    ppd_betul = KOD_PPD_MAPPING.get(kod, "")
-                    if kod in KOD_PPD_MAPPING and ppd_betul:
-                        if r.get("ppd") != ppd_betul or r.get("kod_ppd") != kod:
-                            r["ppd"] = ppd_betul
-                            r["kod_ppd"] = kod
-                            fixed = True
-                if fixed:
-                    try:
-                        with open(REPORTS_FILE, "w") as fw:
-                            json.dump(reports, fw, indent=2)
-                    except:
-                        pass
+                    ppd_lama = str(r.get("ppd","")).strip()
+                    # Hanya fix jika kosong atau masih kod
+                    if not ppd_lama and kod in KOD_PPD_MAPPING:
+                        r["ppd"] = KOD_PPD_MAPPING[kod]
+                        r["kod_ppd"] = kod
+                    elif ppd_lama in KOD_PPD_MAPPING:
+                        r["ppd"] = KOD_PPD_MAPPING[ppd_lama]
+                        r["kod_ppd"] = ppd_lama
+                    if not r.get("kod_ppd") and kod in KOD_PPD_MAPPING:
+                        r["kod_ppd"] = kod
                 return reports
         except:
             return []
@@ -2223,17 +2220,20 @@ with col_content:
                 st.link_button("📱 Hantar WhatsApp", wa_link_cetak, use_container_width=True, key=f"wa_btn_{selected_report.get('id','')}")
 
 
-    # ========== MENU: PADAM LAPORAN - JPN SAHAJA (KASHAH REQUEST) ==========
+    # ========== MENU BARU: DOWNLOAD PUKAL ZIP - FIX KASHAH: JPN PILIH DAERAH + TARIKH, PPD HANYA DAERAH DIA ==========
+    elif menu.startswith("📦"):
         st.markdown('<div class="card"><h3>📦 Download Pukal ZIP - PDF Berlogo</h3><p style="font-size:12px;">JPN/PPD boleh download semua laporan ikut tarikh dalam 1 ZIP file. Semua PDF ada logo LP, tulisan sampai sempadan, garis lurus, tiada jarak, 1 muka TIADA KES.</p></div>', unsafe_allow_html=True)
         
-        # FILTER IKUT PERANAN - PPD hanya daerah dia (ikut KOD No Pusat), JPN semua
+        # FILTER IKUT PERANAN - PPD hanya daerah dia, JPN semua - FIX KASHAH: Filter ikut KOD sahaja, jangan ikut field ppd yang salah
         if peranan_user == "PPD":
             user_ppd = user.get('ppd','')
             user_kod = PPD_TO_KOD.get(user_ppd, '')
             def match_ppd(r):
+                # FIX: Hanya guna kod_ppd dan no_pusat prefix, JANGAN guna ppd field (sebab data lama ppd=Klang padahal BH)
                 kod_r = str(r.get('kod_ppd','')).upper()
                 no_pusat = str(r.get('no_pusat','')).upper()
                 kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
+                # Match jika kod sama
                 if kod_r and kod_r == user_kod: return True
                 if kod_dari_pusat and kod_dari_pusat == user_kod: return True
                 return False
@@ -2241,6 +2241,7 @@ with col_content:
             st.info(f"📍 PPD {user_ppd} ({user_kod}) - hanya laporan daerah {user_ppd} sahaja - Filter kod {user_kod}")
         else:
             reports_for_download = reports
+            # Breakdown untuk JPN
             if reports_for_download:
                 from collections import Counter
                 all_ppd_counter = Counter([r.get('ppd','') or 'TIADA PPD' for r in reports_for_download])
@@ -2250,6 +2251,7 @@ with col_content:
         if not reports_for_download:
             if peranan_user == "PPD":
                 st.warning(f"Belum ada laporan untuk daerah {user.get('ppd')}. KP daerah {user.get('ppd')} belum hantar.")
+                st.caption(f"Debug: Total sistem={len(reports)}, daerah anda={len(reports_for_download)}")
             else:
                 st.warning("Belum ada laporan dalam sistem.")
         else:
@@ -2257,44 +2259,38 @@ with col_content:
             from collections import Counter
             tarikh_counts = Counter([r.get('tarikh','') for r in reports_for_download if r.get('tarikh')])
             
-            # JPN: Pilihan Daerah & Tarikh - FIX KASHAH: Tunjuk SEMUA DAERAH, filter ikut KOD bukan field ppd sahaja
+            # JPN: Pilihan Daerah + Tarikh
             if peranan_user == "ADMIN_JPN" or peranan_user == "LP":
                 st.markdown("#### 🎯 Pilih Daerah & Tarikh (JPN - Semua Daerah)")
                 col_ppd, col_tarikh = st.columns(2)
                 with col_ppd:
+                    # FIX KASHAH: Dropdown JPN mesti tunjuk SEMUA DAERAH, bukan hanya Klang sahaja - ambil dari PPD_LIST penuh
+                    all_ppds_with_data = sorted(list(set([r.get('ppd','') for r in reports_for_download if r.get('ppd')])))
+                    # Gabung semua PPD dari senarai penuh + yang ada data, tapi ikut PPD_LIST order
                     ppd_options = ["SEMUA DAERAH"] + PPD_LIST
-                    selected_ppd_filter = st.selectbox("Pilih Daerah / PPD", ppd_options, key="jpn_ppd_filter_v3")
+                    selected_ppd_filter = st.selectbox("Pilih Daerah / PPD", ppd_options, key="jpn_ppd_filter_v2")
+                    # Info berapa laporan untuk setiap PPD
+                    from collections import Counter
                     ppd_count_map = Counter([r.get('ppd','') for r in reports_for_download])
+                    if selected_ppd_filter != "SEMUA DAERAH":
+                        count_sel = ppd_count_map.get(selected_ppd_filter, 0)
+                        if count_sel == 0:
+                            st.warning(f"⚠️ Belum ada laporan di daerah {selected_ppd_filter}")
                 with col_tarikh:
                     all_tarikhs = sorted(list(set([r.get('tarikh','') for r in reports_for_download if r.get('tarikh')])), reverse=True)
                     tarikh_options = ["SEMUA TARIKH"] + all_tarikhs
-                    selected_tarikh_filter = st.selectbox("Pilih Tarikh", tarikh_options, key="jpn_tarikh_filter_v3")
+                    selected_tarikh_filter = st.selectbox("Pilih Tarikh", tarikh_options, key="jpn_tarikh_filter_v2")
                 
-                # FIX: Filter JPN ikut KOD juga, bukan ppd field sahaja (sebab data lama ppd=Klang padahal BH)
                 filtered_jpn = reports_for_download
                 if selected_ppd_filter != "SEMUA DAERAH":
-                    user_kod_jpn = PPD_TO_KOD.get(selected_ppd_filter, '')
-                    def match_jpn(r):
-                        # Check kod_ppd dan no_pusat
-                        kod_r = str(r.get('kod_ppd','')).upper()
-                        no_pusat = str(r.get('no_pusat','')).upper()
-                        kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
-                        ppd_r = r.get('ppd','')
-                        # Match jika kod sama ATAU ppd sama (untuk data baru)
-                        if user_kod_jpn and (kod_r == user_kod_jpn or kod_dari_pusat == user_kod_jpn):
-                            return True
-                        if ppd_r == selected_ppd_filter:
-                            return True
-                        return False
-                    filtered_jpn = [r for r in filtered_jpn if match_jpn(r)]
+                    filtered_jpn = [r for r in filtered_jpn if r.get('ppd') == selected_ppd_filter]
                 if selected_tarikh_filter != "SEMUA TARIKH":
                     filtered_jpn = [r for r in filtered_jpn if r.get('tarikh') == selected_tarikh_filter]
                 
                 if not filtered_jpn:
                     if selected_ppd_filter != "SEMUA DAERAH":
                         st.warning(f"📭 Belum ada laporan di daerah {selected_ppd_filter} untuk Tarikh={selected_tarikh_filter}")
-                        if ppd_count_map.get(selected_ppd_filter, 0) == 0:
-                            st.info(f"Daerah {selected_ppd_filter} belum ada KP yang hantar laporan.")
+                        st.info(f"Daerah {selected_ppd_filter} belum ada KP yang hantar laporan. Total sistem ada {len(reports_for_download)} laporan: {', '.join([f'{k}={v}' for k,v in Counter([r.get('ppd','') for r in reports_for_download]).items()])}")
                     else:
                         st.warning(f"Tiada laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter}")
                 else:
@@ -2305,7 +2301,7 @@ with col_content:
                     
                     col_jana, col_dl = st.columns(2)
                     with col_jana:
-                        if st.button(f"🔄 Jana ZIP {len(filtered_jpn)} Laporan", key="jpn_jana_filtered_v3", type="primary", use_container_width=True):
+                        if st.button(f"🔄 Jana ZIP {len(filtered_jpn)} Laporan", key="jpn_jana_filtered_v2", type="primary", use_container_width=True):
                             with st.spinner(f"Jana {len(filtered_jpn)} PDF..."):
                                 try:
                                     import zipfile
@@ -2343,7 +2339,7 @@ with col_content:
                                 data=st.session_state["jpn_filtered_zip"],
                                 file_name=f"BLPP_JPN_{selected_ppd_filter}_{selected_tarikh_filter}_{count}laporan.zip",
                                 mime="application/zip",
-                                key="jpn_dl_filtered_v3",
+                                key="jpn_dl_filtered_v2",
                                 type="primary",
                                 use_container_width=True
                             )
@@ -2356,37 +2352,37 @@ with col_content:
                     with col1:
                         st.write(f"📅 **{t}** - {c} laporan")
                         from collections import Counter
-                        def get_ppd_betul_disp(r):
+                        def get_ppd_betul(r):
                             kod = r.get('kod_ppd','') or str(r.get('no_pusat',''))[:2].upper()
                             if kod in KOD_PPD_MAPPING:
                                 return KOD_PPD_MAPPING[kod]
                             return r.get('ppd','') or 'TIADA PPD'
-                        ppd_counter = Counter([get_ppd_betul_disp(r) for r in reports_for_download if r.get('tarikh')==t])
+                        ppd_counter = Counter([get_ppd_betul(r) for r in reports_for_download if r.get('tarikh')==t])
                         ppd_detail = ", ".join([f"{ppd}({count})" for ppd, count in ppd_counter.items()])
                         st.caption(f"PPD: {ppd_detail}")
                     with col2:
-                        if st.button(f"🔄 Jana ZIP", key=f"bulk_menu_jana_{t}_v3", type="primary", use_container_width=True):
+                        if st.button(f"🔄 Jana ZIP", key=f"bulk_menu_jana_{t}_v2", type="primary", use_container_width=True):
                             with st.spinner(f"Jana {c} PDF..."):
                                 try:
                                     zip_data, count = create_bulk_pdf_zip_by_date(reports_for_download, t)
                                     if zip_data:
-                                        st.session_state[f"bulk_menu_zip_{t}_v3"] = zip_data
-                                        st.session_state[f"bulk_menu_count_{t}_v3"] = count
+                                        st.session_state[f"bulk_menu_zip_{t}_v2"] = zip_data
+                                        st.session_state[f"bulk_menu_count_{t}_v2"] = count
                                         st.success(f"✅ {count} PDF dijana!")
                                     else:
                                         st.error("Gagal jana ZIP")
                                 except Exception as e:
                                     st.error(f"Error: {e}")
                     with col3:
-                        zk = f"bulk_menu_zip_{t}_v3"
+                        zk = f"bulk_menu_zip_{t}_v2"
                         if zk in st.session_state:
-                            count = st.session_state.get(f"bulk_menu_count_{t}_v3", c)
+                            count = st.session_state.get(f"bulk_menu_count_{t}_v2", c)
                             st.download_button(
                                 label=f"⬇️ Download ZIP ({count})", 
                                 data=st.session_state[zk], 
                                 file_name=f"BLPP_PUKAL_{t}_{count}laporan.zip", 
                                 mime="application/zip", 
-                                key=f"bulk_menu_dl_{t}_v3",
+                                key=f"bulk_menu_dl_{t}_v2",
                                 use_container_width=True
                             )
                         else:
@@ -2394,7 +2390,7 @@ with col_content:
             
             st.markdown("---")
             st.markdown("#### 📥 Download Semua Tarikh (All-in-One)")
-            if st.button("🔄 Jana ZIP Semua Laporan", key="bulk_all_jana_v3", type="secondary"):
+            if st.button("🔄 Jana ZIP Semua Laporan", key="bulk_all_jana_v2", type="secondary"):
                 with st.spinner(f"Jana {len(reports_for_download)} PDF..."):
                     try:
                         import zipfile
@@ -2419,21 +2415,22 @@ with col_content:
                                     except:
                                         pass
                         zip_buffer.seek(0)
-                        st.session_state["bulk_all_zip_v3"] = zip_buffer.getvalue()
+                        st.session_state["bulk_all_zip_v2"] = zip_buffer.getvalue()
                         st.success(f"✅ {len(reports_for_download)} PDF dijana!")
                     except Exception as e:
                         st.error(f"Error: {e}")
             
-            if "bulk_all_zip_v3" in st.session_state:
+            if "bulk_all_zip_v2" in st.session_state:
                 st.download_button(
                     label=f"⬇️ Download ZIP Semua ({len(reports_for_download)} laporan)",
-                    data=st.session_state["bulk_all_zip_v3"],
+                    data=st.session_state["bulk_all_zip_v2"],
                     file_name=f"BLPP_PUKAL_SEMUA_{len(reports_for_download)}laporan.zip",
                     mime="application/zip",
-                    key="bulk_all_dl_v3"
+                    key="bulk_all_dl_v2"
                 )
 
-    # ========== MENU: PADAM LAPORAN - JPN SAHAJA (KASHAH REQUEST) ==========
+    # ========== MENU: PADAM LAPORAN
+    # ========== MENU: PADAM LAPORAN - JPN SAHAJA ==========
     elif menu.startswith("🗑️"):
 
         st.markdown('<div class="card"><h3>🗑️ Padam Laporan - JPN Selangor</h3><p style="font-size:12px;">Function delete: satu persatu, ikut hari, ikut daerah, keseluruhan</p></div>', unsafe_allow_html=True)
