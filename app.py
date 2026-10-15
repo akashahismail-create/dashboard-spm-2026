@@ -99,17 +99,13 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"], div[data-testid="stTe
 """, unsafe_allow_html=True)
 
 # ========== DATA PPD SELANGOR (10 PPD) + KOD PPD ==========
-PPD_LIST = [
-    "Petaling Utama", "Petaling Perdana", "Gombak", "Hulu Langat", 
-    "Klang", "Kuala Langat", "Kuala Selangor", "Hulu Selangor", "Sepang", "Sabak Bernam"
-]
+PPD_LIST = ["Klang", "Kuala Langat", "Kuala Selangor", "Hulu Langat", "Sabak Bernam", "Gombak", "Petaling Perdana", "Sepang", "Petaling Utama"]
 
 KOD_PPD_MAPPING = {
     "BA": "Klang",
     "BB": "Kuala Langat",
     "BC": "Kuala Selangor",
     "BD": "Hulu Langat",
-    "BE": "Hulu Selangor",
     "BF": "Sabak Bernam",
     "BG": "Gombak",
     "BH": "Petaling Perdana",
@@ -136,7 +132,17 @@ def ensure_centers(centers):
         return get_all_pusat()
     return centers
 
-PPD_TO_KOD = {v:k for k,v in KOD_PPD_MAPPING.items()}
+PPD_TO_KOD = {
+    "Klang": "BA",
+    "Kuala Langat": "BB",
+    "Kuala Selangor": "BC",
+    "Hulu Langat": "BD",
+    "Sabak Bernam": "BF",
+    "Gombak": "BG",
+    "Petaling Perdana": "BH",
+    "Sepang": "BJ",
+    "Petaling Utama": "BK"
+}
 
 PEPERIKSAAN_LIST = [
     "SPM 2026", 
@@ -294,7 +300,17 @@ def load_users():
     users.append({"id":"LP001","nama":"Lembaga Peperiksaan","peranan":"LP","ppd":"Semua","no_pusat":"-","password":"2026","telefon":""})
     # 10 PPD - PASSWORD KOD PPD IKUT CADANGAN KASHAH: BA=Klang, BB=Kuala Langat dll - MUDAH INGAT
     # Mapping Kod ke PPD dari KOD_PPD_MAPPING
-    PPD_TO_KOD = {v:k for k,v in KOD_PPD_MAPPING.items()}  # Klang->BA etc
+    PPD_TO_KOD = {
+    "Klang": "BA",
+    "Kuala Langat": "BB",
+    "Kuala Selangor": "BC",
+    "Hulu Langat": "BD",
+    "Sabak Bernam": "BF",
+    "Gombak": "BG",
+    "Petaling Perdana": "BH",
+    "Sepang": "BJ",
+    "Petaling Utama": "BK"
+}  # Klang->BA etc
     for i, ppd in enumerate(PPD_LIST):
         kod = PPD_TO_KOD.get(ppd, f"PPD{i+1:02d}")
         # Password = kod kecil dan besar - mudah: ba, BA, klang, ppd01 semua boleh
@@ -2234,103 +2250,7 @@ with col_content:
 
 
     # ========== MENU: PADAM LAPORAN - JPN SAHAJA (KASHAH REQUEST) ==========
-
-    # ========== MENU BARU: DOWNLOAD PUKAL ZIP - FIX KASHAH ==========
-    elif menu.startswith("📦"):
-        st.markdown('<div class="card"><h3>📦 Download Pukal ZIP - PDF Berlogo</h3><p style="font-size:12px;">JPN/PPD boleh download semua laporan ikut tarikh dalam 1 ZIP file. Semua PDF ada logo LP, tulisan sampai sempadan, garis lurus, tiada jarak, 1 muka TIADA KES.</p></div>', unsafe_allow_html=True)
-        
-        if not reports:
-            st.warning("Belum ada laporan dalam sistem. Laporan akan muncul di sini selepas KP hantar.")
-            st.info("💡 Untuk testing, minta KP isi borang dulu, atau check Google Sheets connection.")
-        else:
-            st.success(f"📊 Total laporan: {len(reports)}")
-            from collections import Counter
-            tarikh_counts = Counter([r.get('tarikh','') for r in reports if r.get('tarikh')])
-            
-            if not tarikh_counts:
-                st.warning("Tiada tarikh dalam laporan")
-            else:
-                st.markdown("#### 📅 Pilih Tarikh untuk Download Pukal")
-                for t, c in sorted(tarikh_counts.items(), reverse=True):
-                    with st.container(border=True):
-                        col1, col2, col3 = st.columns([2,1,1])
-                        with col1:
-                            st.write(f"📅 **{t}** - {c} laporan")
-                            # List PPD for this date
-                            ppd_list = list(set([r.get('ppd','') for r in reports if r.get('tarikh')==t]))
-                            st.caption(f"PPD: {', '.join(ppd_list[:5])}")
-                        with col2:
-                            if st.button(f"🔄 Jana ZIP", key=f"bulk_menu_jana_{t}", type="primary", use_container_width=True):
-                                with st.spinner(f"Jana {c} PDF..."):
-                                    try:
-                                        zip_data, count = create_bulk_pdf_zip_by_date(reports, t)
-                                        if zip_data:
-                                            st.session_state[f"bulk_menu_zip_{t}"] = zip_data
-                                            st.session_state[f"bulk_menu_count_{t}"] = count
-                                            st.success(f"✅ {count} PDF dijana!")
-                                        else:
-                                            st.error("Gagal jana ZIP - tiada laporan untuk tarikh ini")
-                                    except Exception as e:
-                                        st.error(f"Error: {e}")
-                        with col3:
-                            zk = f"bulk_menu_zip_{t}"
-                            if zk in st.session_state:
-                                count = st.session_state.get(f"bulk_menu_count_{t}", c)
-                                st.download_button(
-                                    label=f"⬇️ Download ZIP ({count})", 
-                                    data=st.session_state[zk], 
-                                    file_name=f"BLPP_PUKAL_{t}_{count}laporan.zip", 
-                                    mime="application/zip", 
-                                    key=f"bulk_menu_dl_{t}",
-                                    use_container_width=True
-                                )
-                            else:
-                                st.caption("Tekan Jana ZIP dulu")
-                
-                st.markdown("---")
-                st.markdown("#### 📥 Download Semua Tarikh (All-in-One)")
-                if st.button("🔄 Jana ZIP Semua Laporan", key="bulk_all_jana", type="secondary"):
-                    with st.spinner(f"Jana {len(reports)} PDF..."):
-                        try:
-                            import zipfile
-                            from io import BytesIO
-                            zip_buffer = BytesIO()
-                            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                                for r in reports:
-                                    no_pusat = r.get('no_pusat','UNKNOWN')
-                                    safe_nama = "".join(c if c.isalnum() or c in ('-','_') else '_' for c in r.get('nama_pusat','')[:15])
-                                    base_filename = f"{r.get('tarikh','')}_{no_pusat}_{safe_nama}"
-                                    try:
-                                        pdf_data = jana_blpp_pdf(r)
-                                        if isinstance(pdf_data, BytesIO):
-                                            pdf_bytes = pdf_data.getvalue()
-                                        else:
-                                            pdf_bytes = pdf_data
-                                        zip_file.writestr(f"{base_filename}.pdf", pdf_bytes)
-                                    except Exception as e:
-                                        try:
-                                            html_content = jana_blpp_html(r)
-                                            zip_file.writestr(f"{base_filename}.html", html_content)
-                                        except:
-                                            pass
-                            zip_buffer.seek(0)
-                            st.session_state["bulk_all_zip"] = zip_buffer.getvalue()
-                            st.success(f"✅ {len(reports)} PDF dijana!")
-                        except Exception as e:
-                            st.error(f"Error: {e}")
-                
-                if "bulk_all_zip" in st.session_state:
-                    st.download_button(
-                        label=f"⬇️ Download ZIP Semua ({len(reports)} laporan)",
-                        data=st.session_state["bulk_all_zip"],
-                        file_name=f"BLPP_PUKAL_SEMUA_{len(reports)}laporan.zip",
-                        mime="application/zip",
-                        key="bulk_all_dl"
-                    )
-
-    # ========== MENU: PADAM LAPORAN - JPN SAHAJA ==========
     elif menu.startswith("🗑️"):
-
         st.markdown('<div class="card"><h3>🗑️ Padam Laporan - JPN Selangor</h3><p style="font-size:12px;">Function delete: satu persatu, ikut hari, ikut daerah, keseluruhan</p></div>', unsafe_allow_html=True)
         
         if peranan_user != "ADMIN_JPN":
