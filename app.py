@@ -318,22 +318,75 @@ def load_amali_centers():
 DATA_DIR = "/tmp/blpp_data"
 os.makedirs(DATA_DIR, exist_ok=True)
 USERS_FILE = os.path.join(DATA_DIR, "users.json")
+# v27 EMERGENCY RESET - untuk clear users.json lama
+def emergency_reset_users():
+    import os
+    try:
+        if os.path.exists(USERS_FILE):
+            os.remove(USERS_FILE)
+        if os.path.exists(REPORTS_FILE):
+            # jangan delete reports, cuma users
+            pass
+        st.cache_data.clear()
+        return True
+    except Exception as e:
+        return False
 REPORTS_FILE = os.path.join(DATA_DIR, "blpp_reports.json")
 
+
+def find_user_flexible(users, entered_id, entered_password):
+    # v26: Support login dengan ID = No Pusat, case-insensitive
+    eid = str(entered_id).strip().upper()
+    epw = str(entered_password).strip().lower()
+    epw_upper = str(entered_password).strip().upper()
+    # 1. Cari exact ID match (BA001)
+    for u in users:
+        uid = str(u.get("id","")).strip().upper()
+        pw = str(u.get("password","")).strip().lower()
+        pw_alt = str(u.get("password_alt","") or "").strip().lower()
+        pw_alt2 = str(u.get("password_alt2","") or "").strip().lower()
+        # ID match
+        if uid == eid:
+            # Password check - lower, upper, or alt
+            if pw == epw or pw_alt == epw or pw_alt2 == epw or pw == epw_upper.lower() or str(u.get("password","")).lower() == epw:
+                return u
+            # Also allow password = no_pusat lower
+            if str(u.get("no_pusat","")).strip().lower() == epw:
+                return u
+    # 2. Cari by no_pusat (kalau user taip BA001 tapi ID dalam file KP001)
+    for u in users:
+        np = str(u.get("no_pusat","")).strip().upper()
+        if np == eid:
+            pw = str(u.get("password","")).strip().lower()
+            pw_alt = str(u.get("password_alt","") or "").strip().lower()
+            pw_alt2 = str(u.get("password_alt2","") or "").strip().lower()
+            if pw == epw or pw_alt == epw or pw_alt2 == epw or np.lower() == epw:
+                return u
+    return None
+
 def load_users():
-    # KP001 style - 504 KP full - FIX: generate 504 bukan 20 saja
+    # v26 FIX KASHAH: Force regenerate kalau BA001 tak wujud - untuk support ID = No Pusat
     if os.path.exists(USERS_FILE):
         try:
             with open(USERS_FILE, "r") as f:
                 data = json.load(f)
-                # kalau dah ada file tapi masih format lama 20 saja, regenerate ke 504
                 kp_count = len([u for u in data if u.get("peranan")=="KP"])
-                if kp_count >= 500:
+                # Check kalau ada BA001 sebagai ID - kalau tak ada, file lama KP001 style, kena regenerate
+                has_ba001 = any(str(u.get("id","")).upper()=="BA001" for u in data)
+                has_bk002 = any(str(u.get("id","")).upper()=="BK002" for u in data)
+                if kp_count >= 500 and has_ba001 and has_bk002:
                     return data
                 else:
-                    os.remove(USERS_FILE)
-        except:
-            pass
+                    # File lama - delete untuk regenerate dengan ID = No Pusat
+                    try:
+                        os.remove(USERS_FILE)
+                    except:
+                        pass
+        except Exception as e:
+            try:
+                os.remove(USERS_FILE)
+            except:
+                pass
 
     # Default users - 504 KP + admin
     users = []
@@ -387,19 +440,38 @@ def load_users():
             no_pusat = str(c.get("No_Pusat","")).strip().upper()
             nama_pusat = str(c.get("Nama_Pusat") or c.get("Nama_Sekolah","")).strip()
             ppd = str(c.get("PPD","")).strip()
-            uid = f"KP{idx:03d}"
+            # v25 FIX KASHAH: ID = No Pusat terus, bukan KP001 - senang KP ingat
+            # Contoh: BA001 login dengan ID BA001 / ba001, BK002 dengan BK002
+            uid = no_pusat  # ID = No Pusat
             users.append({
-                "id": uid,
-                "nama": f"KP {uid} - {nama_pusat[:30]}",
+                "id": uid,  # BA001, BK002, BH562 dll
+                "nama": f"KP {no_pusat} - {nama_pusat[:40]}",
                 "peranan": "KP",
                 "ppd": ppd,
                 "no_pusat": no_pusat,
                 "nama_pusat": nama_pusat,
-                "password": uid.lower(),
-                "telefon": ""
+                "password": no_pusat.lower(),  # ba001
+                "password_alt": no_pusat.upper(),  # BA001
+                "password_alt2": f"kp{idx:03d}".lower(),  # legacy kp001 masih boleh
+                "telefon": "",
+                "kod_ppd": no_pusat[:2] if len(no_pusat)>=2 else ""
+            })
+            # Juga tambah alias KP001 -> BA001 untuk backward compatibility
+            users.append({
+                "id": f"KP{idx:03d}",
+                "nama": f"KP {no_pusat} - {nama_pusat[:30]} (Alias)",
+                "peranan": "KP",
+                "ppd": ppd,
+                "no_pusat": no_pusat,
+                "nama_pusat": nama_pusat,
+                "password": f"kp{idx:03d}".lower(),
+                "password_alt": no_pusat.lower(),
+                "password_alt2": no_pusat.upper(),
+                "telefon": "",
+                "kod_ppd": no_pusat[:2] if len(no_pusat)>=2 else ""
             })
     else:
-        # Fallback 504 ikut mapping BA-BK - FIX BUG Petaling Utama
+        # Fallback 504 - ID = No Pusat juga
         for i in range(1, 505):
             ppd = PPD_LIST[(i-1) % 10]
             kod = list(KOD_PPD_MAPPING.keys())[(i-1) // 60 % len(KOD_PPD_MAPPING)]
@@ -414,15 +486,15 @@ def load_users():
                 no_pusat="BC001"
                 nama_pusat="SMK Sepang"
                 ppd="Sepang"
-            uid = f"KP{i:03d}"
             users.append({
-                "id": uid,
-                "nama": f"KP {uid} - {nama_pusat[:30]}",
+                "id": no_pusat,
+                "nama": f"KP {no_pusat} - {nama_pusat[:30]}",
                 "peranan": "KP",
-                "ppd": ppd,  # FIX: Guna ppd variable, bukan user["ppd"] - bug lama sebab user tak wujud
+                "ppd": ppd,
                 "no_pusat": no_pusat,
                 "nama_pusat": nama_pusat,
-                "password": uid.lower(),
+                "password": no_pusat.lower(),
+                "password_alt": no_pusat.upper(),
                 "telefon": "",
                 "kod_ppd": kod
             })
@@ -1330,6 +1402,15 @@ if not st.session_state.login:
                 st.rerun()
             else:
                 st.error("❌ ID atau Kata Laluan salah. Sila semak peranan dan cuba lagi.")
+                with st.expander("🔧 Fix: BA001 tak boleh login? Klik sini"):
+                    st.write("App masih guna data lama KP001. Klik Reset untuk buat 504 ID baru (BA001, BK002...)")
+                    if st.button("🔄 RESET DATABASE - Buat Semula 504 KP (BA001 etc)"):
+                        if emergency_reset_users():
+                            st.success("✅ Database direset! Sila Refresh dan cuba login BA001 / ba001 semula")
+                            st.balloons()
+                        else:
+                            st.error("Gagal reset")
+                st.info(f"Debug: Cuba login dengan ID dari Excel - contoh BA001/ba001, BH562/bh562, BK002/bk002")
         
         # PANDUAN DIBUANG IKUT REQUEST KASHAH
         
