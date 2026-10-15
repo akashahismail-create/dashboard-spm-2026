@@ -2264,9 +2264,18 @@ with col_content:
                 st.markdown("#### 🎯 Pilih Daerah & Tarikh (JPN - Semua Daerah)")
                 col_ppd, col_tarikh = st.columns(2)
                 with col_ppd:
-                    all_ppds = sorted(list(set([r.get('ppd','') for r in reports_for_download if r.get('ppd')])))
-                    ppd_options = ["SEMUA DAERAH"] + all_ppds
+                    # FIX KASHAH: Dropdown JPN mesti tunjuk SEMUA DAERAH, bukan hanya Klang sahaja - ambil dari PPD_LIST penuh
+                    all_ppds_with_data = sorted(list(set([r.get('ppd','') for r in reports_for_download if r.get('ppd')])))
+                    # Gabung semua PPD dari senarai penuh + yang ada data, tapi ikut PPD_LIST order
+                    ppd_options = ["SEMUA DAERAH"] + PPD_LIST
                     selected_ppd_filter = st.selectbox("Pilih Daerah / PPD", ppd_options, key="jpn_ppd_filter_v2")
+                    # Info berapa laporan untuk setiap PPD
+                    from collections import Counter
+                    ppd_count_map = Counter([r.get('ppd','') for r in reports_for_download])
+                    if selected_ppd_filter != "SEMUA DAERAH":
+                        count_sel = ppd_count_map.get(selected_ppd_filter, 0)
+                        if count_sel == 0:
+                            st.warning(f"⚠️ Belum ada laporan di daerah {selected_ppd_filter}")
                 with col_tarikh:
                     all_tarikhs = sorted(list(set([r.get('tarikh','') for r in reports_for_download if r.get('tarikh')])), reverse=True)
                     tarikh_options = ["SEMUA TARIKH"] + all_tarikhs
@@ -2279,7 +2288,11 @@ with col_content:
                     filtered_jpn = [r for r in filtered_jpn if r.get('tarikh') == selected_tarikh_filter]
                 
                 if not filtered_jpn:
-                    st.warning(f"Tiada laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter}")
+                    if selected_ppd_filter != "SEMUA DAERAH":
+                        st.warning(f"📭 Belum ada laporan di daerah {selected_ppd_filter} untuk Tarikh={selected_tarikh_filter}")
+                        st.info(f"Daerah {selected_ppd_filter} belum ada KP yang hantar laporan. Total sistem ada {len(reports_for_download)} laporan: {', '.join([f'{k}={v}' for k,v in Counter([r.get('ppd','') for r in reports_for_download]).items()])}")
+                    else:
+                        st.warning(f"Tiada laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter}")
                 else:
                     st.success(f"✅ {len(filtered_jpn)} laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter} akan dijana")
                     with st.expander(f"📋 Lihat {len(filtered_jpn)} laporan", expanded=False):
