@@ -2235,39 +2235,17 @@ with col_content:
 
     # ========== MENU: PADAM LAPORAN - JPN SAHAJA (KASHAH REQUEST) ==========
 
-    # ========== MENU BARU: DOWNLOAD PUKAL ZIP - FIX KASHAH: PPD HANYA DAERAH DIA ==========
+    # ========== MENU BARU: DOWNLOAD PUKAL ZIP - FIX KASHAH ==========
     elif menu.startswith("📦"):
         st.markdown('<div class="card"><h3>📦 Download Pukal ZIP - PDF Berlogo</h3><p style="font-size:12px;">JPN/PPD boleh download semua laporan ikut tarikh dalam 1 ZIP file. Semua PDF ada logo LP, tulisan sampai sempadan, garis lurus, tiada jarak, 1 muka TIADA KES.</p></div>', unsafe_allow_html=True)
         
-        # FIX CRITICAL: Filter ikut peranan - PPD hanya daerah dia
-        if peranan_user == "PPD":
-            user_ppd = user.get('ppd','')
-            user_kod = PPD_TO_KOD.get(user_ppd, '')
-            def match_ppd_download(r):
-                # Match ppd nama, kod_ppd, atau no_pusat prefix
-                if r.get('ppd') == user_ppd: return True
-                if r.get('PPD') == user_ppd: return True
-                if r.get('kod_ppd') == user_kod: return True
-                no_pusat = str(r.get('no_pusat','')).upper()
-                if user_kod and no_pusat.startswith(user_kod): return True
-                return False
-            reports_for_download = [r for r in reports if match_ppd_download(r)]
-            st.info(f"📍 Login PPD {user_ppd} ({user_kod}) - hanya laporan daerah {user_ppd} sahaja")
+        if not reports:
+            st.warning("Belum ada laporan dalam sistem. Laporan akan muncul di sini selepas KP hantar.")
+            st.info("💡 Untuk testing, minta KP isi borang dulu, atau check Google Sheets connection.")
         else:
-            reports_for_download = reports
-            st.info(f"👑 Login JPN/LP - semua laporan {len(reports)} dipaparkan")
-        
-        if not reports_for_download:
-            if peranan_user == "PPD":
-                st.warning(f"Belum ada laporan untuk daerah {user.get('ppd')} dalam sistem. KP daerah {user.get('ppd')} belum hantar lagi.")
-                st.info(f"💡 Laporan sedia ada dalam sistem adalah untuk daerah lain, bukan {user.get('ppd')}. Tunggu KP {user.get('ppd')} hantar.")
-            else:
-                st.warning("Belum ada laporan dalam sistem. Laporan akan muncul di sini selepas KP hantar.")
-            st.caption(f"Debug: Total laporan sistem={len(reports)}, laporan daerah anda={len(reports_for_download)}, PPD anda={user.get('ppd')}")
-        else:
-            st.success(f"📊 Total laporan: {len(reports_for_download)} {'(Daerah ' + user.get('ppd') + ' sahaja)' if peranan_user=='PPD' else '(Semua Daerah)'}")
+            st.success(f"📊 Total laporan: {len(reports)}")
             from collections import Counter
-            tarikh_counts = Counter([r.get('tarikh','') for r in reports_for_download if r.get('tarikh')])
+            tarikh_counts = Counter([r.get('tarikh','') for r in reports if r.get('tarikh')])
             
             if not tarikh_counts:
                 st.warning("Tiada tarikh dalam laporan")
@@ -2278,14 +2256,14 @@ with col_content:
                         col1, col2, col3 = st.columns([2,1,1])
                         with col1:
                             st.write(f"📅 **{t}** - {c} laporan")
-                            # List PPD for this date - guna filtered
-                            ppd_list = list(set([r.get('ppd','') for r in reports_for_download if r.get('tarikh')==t]))
+                            # List PPD for this date
+                            ppd_list = list(set([r.get('ppd','') for r in reports if r.get('tarikh')==t]))
                             st.caption(f"PPD: {', '.join(ppd_list[:5])}")
                         with col2:
                             if st.button(f"🔄 Jana ZIP", key=f"bulk_menu_jana_{t}", type="primary", use_container_width=True):
                                 with st.spinner(f"Jana {c} PDF..."):
                                     try:
-                                        zip_data, count = create_bulk_pdf_zip_by_date(reports_for_download, t)
+                                        zip_data, count = create_bulk_pdf_zip_by_date(reports, t)
                                         if zip_data:
                                             st.session_state[f"bulk_menu_zip_{t}"] = zip_data
                                             st.session_state[f"bulk_menu_count_{t}"] = count
@@ -2301,7 +2279,7 @@ with col_content:
                                 st.download_button(
                                     label=f"⬇️ Download ZIP ({count})", 
                                     data=st.session_state[zk], 
-                                    file_name=f"BLPP_PUKAL_{user.get('ppd') if peranan_user=='PPD' else 'SEMUA'}_{t}_{count}laporan.zip", 
+                                    file_name=f"BLPP_PUKAL_{t}_{count}laporan.zip", 
                                     mime="application/zip", 
                                     key=f"bulk_menu_dl_{t}",
                                     use_container_width=True
@@ -2312,13 +2290,13 @@ with col_content:
                 st.markdown("---")
                 st.markdown("#### 📥 Download Semua Tarikh (All-in-One)")
                 if st.button("🔄 Jana ZIP Semua Laporan", key="bulk_all_jana", type="secondary"):
-                    with st.spinner(f"Jana {len(reports_for_download)} PDF..."):
+                    with st.spinner(f"Jana {len(reports)} PDF..."):
                         try:
                             import zipfile
                             from io import BytesIO
                             zip_buffer = BytesIO()
                             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                                for r in reports_for_download:
+                                for r in reports:
                                     no_pusat = r.get('no_pusat','UNKNOWN')
                                     safe_nama = "".join(c if c.isalnum() or c in ('-','_') else '_' for c in r.get('nama_pusat','')[:15])
                                     base_filename = f"{r.get('tarikh','')}_{no_pusat}_{safe_nama}"
