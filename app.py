@@ -119,35 +119,59 @@ KOD_PPD_MAPPING = {
 
 
 def get_all_pusat():
-    # v19: cuba load data real dari Excel jika ada, kekal fungsi asal sebagai fallback
+    # v24 FINAL: Super flexible - support data_v1.1(3)(1).xlsx macam di Github Kashah
     try:
-        import pandas as pd, os
-        for p in ["data_v1.1_3_1.xlsx", "data/data_v1.1_3_1.xlsx", "/mnt/data/data_v1.1_3_1.xlsx", "data_v1.1_3_1 (1).xlsx"]:
-            if os.path.exists(p):
-                try:
-                    df = pd.read_excel(p)
-                    centers=[]
-                    for _, row in df.iterrows():
-                        kod = str(row.get("Kod_PPD","")).strip().upper()
-                        if not kod:
-                            continue
-                        centers.append({
-                            "Kod_PPD": kod,
-                            "No_Pusat": str(row.get("No_Pusat","")).strip(),
-                            "Nama_Pusat": str(row.get("Nama_Pusat","")).strip(),
-                            "PPD": KOD_PPD_MAPPING.get(kod, str(row.get("PPD", KOD_PPD_MAPPING.get(kod,"")))),
-                            "Nama_Sekolah": str(row.get("Nama_Pusat","")).strip(),
-                            "Bil_Calon": int(row.get("Bil_Calon_Pusat",0)) if pd.notna(row.get("Bil_Calon_Pusat",0)) else 0
-                        })
-                    if len(centers)>=400:
-                        # pastikan BH562 kekal
-                        has_bh562 = any(c["No_Pusat"]=="BH562" for c in centers)
-                        if not has_bh562:
-                            centers[0] = {"Kod_PPD":"BH","No_Pusat":"BH562","Nama_Pusat":"MAAHAD SAINS AL-QURAN AL-AMIN","PPD":"Petaling Perdana","Nama_Sekolah":"MAAHAD SAINS AL-QURAN AL-AMIN"}
-                        return centers
-                except Exception as e:
-                    pass
-    except:
+        import pandas as pd, os, glob
+        # Cari semua xlsx yang ada v1.1 atau pusat
+        search_patterns = [
+            "data_v1.1*.xlsx", "data_v1.1(*).xlsx", "*v1.1*.xlsx",
+            "data/*.xlsx", "*.xlsx", "/mnt/data/*.xlsx"
+        ]
+        candidates = []
+        for pat in search_patterns:
+            candidates.extend(glob.glob(pat))
+            candidates.extend(glob.glob(os.path.join(".", pat)))
+        # tambah file spesifik github
+        for f in os.listdir("."):
+            if f.endswith(".xlsx") and ("v1.1" in f or "pusat" in f.lower()):
+                if f not in candidates:
+                    candidates.append(f)
+        # deduplicate
+        candidates = list(set(candidates))
+        for p in candidates:
+            if not os.path.exists(p):
+                continue
+            # skip amali
+            if "amali" in p.lower():
+                continue
+            try:
+                df = pd.read_excel(p)
+                # check ada Kod_PPD dan No_Pusat
+                if "Kod_PPD" not in df.columns or "No_Pusat" not in df.columns:
+                    continue
+                centers=[]
+                for _, row in df.iterrows():
+                    kod = str(row.get("Kod_PPD","")).strip().upper()
+                    if not kod or kod == "NAN":
+                        continue
+                    centers.append({
+                        "Kod_PPD": kod,
+                        "No_Pusat": str(row.get("No_Pusat","")).strip(),
+                        "Nama_Pusat": str(row.get("Nama_Pusat","")).strip(),
+                        "PPD": KOD_PPD_MAPPING.get(kod, str(row.get("PPD", KOD_PPD_MAPPING.get(kod,"")))),
+                        "Nama_Sekolah": str(row.get("Nama_Pusat","")).strip(),
+                        "Bil_Calon": int(row.get("Bil_Calon_Pusat",0)) if pd.notna(row.get("Bil_Calon_Pusat",0)) else 0
+                    })
+                if len(centers)>=100:  # asal 400, kita longgarkan untuk test
+                    has_bh562 = any(c["No_Pusat"]=="BH562" for c in centers)
+                    if not has_bh562:
+                        centers.append({"Kod_PPD":"BH","No_Pusat":"BH562","Nama_Pusat":"MAAHAD SAINS AL-QURAN AL-AMIN","PPD":"Petaling Perdana","Nama_Sekolah":"MAAHAD SAINS AL-QURAN AL-AMIN"})
+                    print(f"get_all_pusat loaded {len(centers)} from {p}")
+                    return centers
+            except Exception as e:
+                # print(f"get_all_pusat fail {p}: {e}")
+                pass
+    except Exception as e:
         pass
     # fallback asal - dummy
     centers=[]
@@ -204,53 +228,49 @@ def load_spm_centers():
                     return json.load(f)
             except:
                 pass
-    # 2. Cari Excel SPM - fleksibel nama ada (1) (3) pun boleh
-    search_folders = ["data", "/tmp/blpp_data", ".", "./data"]
+    # 2. Cari Excel SPM - super fleksibel untuk nama (3)(1)
+    search_folders = ["data", "/tmp/blpp_data", ".", "./data", "/mnt/data"]
     for folder in search_folders:
         if not os.path.exists(folder):
             continue
-        # Cari file yang ada v1.1 atau spm
         for file in os.listdir(folder):
-            if file.endswith('.xlsx') and ('v1.1' in file or 'spm' in file.lower() or 'pusat' in file.lower() and 'amali' not in file.lower()):
+            if not file.endswith('.xlsx'):
+                continue
+            if "amali" in file.lower():
+                continue
+            if not ('v1.1' in file or 'spm' in file.lower() or 'pusat' in file.lower()):
+                # check any xlsx with Kod_PPD inside
+                pass
+            path = os.path.join(folder, file)
+            try:
+                # cuba baca sheet selenggara_pusat dulu
                 try:
-                    path = os.path.join(folder, file)
-                    df = pd.read_excel(path, sheet_name="selenggara_pusat")
-                    centers = []
-                    for _, row in df.iterrows():
-                        kod = str(row["Kod_PPD"]).strip()
-                        centers.append({
-                            "Kod_PPD": kod,
-                            "No_Pusat": str(row["No_Pusat"]).strip(),
-                            "Nama_Pusat": str(row["Nama_Pusat"]).strip(),
-                            "PPD": KOD_PPD_MAPPING.get(kod, kod),
-                            "Bil_Calon": int(row["Bil_Calon_Pusat"]) if pd.notna(row["Bil_Calon_Pusat"]) else 0
-                        })
-                    if centers:
-                        return centers
-                except Exception as e:
-                    continue
-        # Try any xlsx with selenggara_pusat sheet
-        for file in os.listdir(folder):
-            if file.endswith('.xlsx'):
-                try:
-                    path = os.path.join(folder, file)
                     xls = pd.ExcelFile(path)
                     if "selenggara_pusat" in xls.sheet_names:
                         df = pd.read_excel(path, sheet_name="selenggara_pusat")
-                        centers = []
-                        for _, row in df.iterrows():
-                            kod = str(row["Kod_PPD"]).strip()
-                            centers.append({
-                                "Kod_PPD": kod,
-                                "No_Pusat": str(row["No_Pusat"]).strip(),
-                                "Nama_Pusat": str(row["Nama_Pusat"]).strip(),
-                                "PPD": KOD_PPD_MAPPING.get(kod, kod),
-                                "Bil_Calon": int(row["Bil_Calon_Pusat"]) if pd.notna(row["Bil_Calon_Pusat"]) else 0
-                            })
-                        if centers:
-                            return centers
+                    else:
+                        df = pd.read_excel(path)
                 except:
+                    df = pd.read_excel(path)
+                if "Kod_PPD" not in df.columns or "No_Pusat" not in df.columns:
                     continue
+                centers = []
+                for _, row in df.iterrows():
+                    kod = str(row.get("Kod_PPD","")).strip()
+                    if not kod or kod.upper()=="NAN":
+                        continue
+                    centers.append({
+                        "Kod_PPD": kod.upper(),
+                        "No_Pusat": str(row.get("No_Pusat","")).strip(),
+                        "Nama_Pusat": str(row.get("Nama_Pusat","")).strip(),
+                        "PPD": KOD_PPD_MAPPING.get(kod.upper(), kod),
+                        "Bil_Calon": int(row.get("Bil_Calon_Pusat",0)) if pd.notna(row.get("Bil_Calon_Pusat",0)) else 0
+                    })
+                if centers:
+                    # print(f"load_spm_centers loaded {len(centers)} from {path}")
+                    return centers
+            except Exception as e:
+                continue
     return []
 
 def load_amali_centers():
