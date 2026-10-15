@@ -395,7 +395,7 @@ def load_reports_cached(file_mtime):
                 reports = json.load(f)
                 # Auto-fix PPD field untuk laporan lama yang bug (BK -> Petaling Utama)
                 fixed = False
-                for r in reports:
+                for r in filtered_for_role:
                     no_pusat = str(r.get("no_pusat","")).upper().strip()
                     ppd_lama = str(r.get("ppd","")).strip()
                     kod = no_pusat[:2] if len(no_pusat)>=2 else ""
@@ -1374,6 +1374,13 @@ with col_content:
 
 
     reports = load_reports()
+    
+    # ===== GLOBAL FILTER: PPD HANYA NAMPAK DAERAH DIA, JPN NAMPAK SEMUA (FIX KASHAH) =====
+    if peranan_user == "PPD":
+        # Simpan reports asal untuk JPN reference, tapi untuk display guna filtered
+        reports_filtered_by_ppd = [r for r in reports if r.get('ppd')==user.get('ppd') or r.get('PPD')==user.get('ppd')]
+    else:
+        reports_filtered_by_ppd = reports
 
     # ========== MENU 1: ISI BORANG BLPP (KP) ==========
     if menu.startswith("📝") or (menu.startswith("📊") and peranan_user=="KP"):
@@ -2239,13 +2246,28 @@ with col_content:
     elif menu.startswith("📦"):
         st.markdown('<div class="card"><h3>📦 Download Pukal ZIP - PDF Berlogo</h3><p style="font-size:12px;">JPN/PPD boleh download semua laporan ikut tarikh dalam 1 ZIP file. Semua PDF ada logo LP, tulisan sampai sempadan, garis lurus, tiada jarak, 1 muka TIADA KES.</p></div>', unsafe_allow_html=True)
         
-        if not reports:
-            st.warning("Belum ada laporan dalam sistem. Laporan akan muncul di sini selepas KP hantar.")
+        # ===== FIX KASHAH: PPD HANYA NAMPAK DAERAH DIA SAHAJA, JPN NAMPAK SEMUA =====
+        # Filter ikut peranan
+        if peranan_user == "PPD":
+            # PPD hanya nampak laporan daerah dia sahaja
+            filtered_for_role = [r for r in reports if r.get('ppd')==user.get('ppd') or r.get('PPD')==user.get('ppd') or r.get('ppd_code')==user.get('ppd')]
+            st.info(f"📍 Anda login sebagai PPD {user.get('ppd')} - hanya laporan daerah {user.get('ppd')} sahaja dipaparkan")
+        else:
+            # JPN dan LP nampak semua
+            filtered_for_role = reports
+            if peranan_user == "ADMIN_JPN":
+                st.info(f"👑 Anda login sebagai JPN - semua laporan {len(reports)} dipaparkan")
+        
+        if not filtered_for_role:
+            if peranan_user == "PPD":
+                st.warning(f"Belum ada laporan untuk daerah {user.get('ppd')} dalam sistem.")
+            else:
+                st.warning("Belum ada laporan dalam sistem. Laporan akan muncul di sini selepas KP hantar.")
             st.info("💡 Untuk testing, minta KP isi borang dulu, atau check Google Sheets connection.")
         else:
-            st.success(f"📊 Total laporan: {len(reports)}")
+            st.success(f"📊 Total laporan: {len(filtered_for_role)} {'(Daerah ' + user.get('ppd') + ' sahaja)' if peranan_user=='PPD' else '(Semua Daerah)'}")
             from collections import Counter
-            tarikh_counts = Counter([r.get('tarikh','') for r in reports if r.get('tarikh')])
+            tarikh_counts = Counter([r.get('tarikh','') for r in filtered_for_role if r.get('tarikh')])
             
             if not tarikh_counts:
                 st.warning("Tiada tarikh dalam laporan")
@@ -2256,14 +2278,14 @@ with col_content:
                         col1, col2, col3 = st.columns([2,1,1])
                         with col1:
                             st.write(f"📅 **{t}** - {c} laporan")
-                            # List PPD for this date
-                            ppd_list = list(set([r.get('ppd','') for r in reports if r.get('tarikh')==t]))
+                            # List PPD for this date - ikut filtered role
+                            ppd_list = list(set([r.get('ppd','') for r in filtered_for_role if r.get('tarikh')==t]))
                             st.caption(f"PPD: {', '.join(ppd_list[:5])}")
                         with col2:
                             if st.button(f"🔄 Jana ZIP", key=f"bulk_menu_jana_{t}", type="primary", use_container_width=True):
                                 with st.spinner(f"Jana {c} PDF..."):
                                     try:
-                                        zip_data, count = create_bulk_pdf_zip_by_date(reports, t)
+                                        zip_data, count = create_bulk_pdf_zip_by_date(filtered_for_role, t)
                                         if zip_data:
                                             st.session_state[f"bulk_menu_zip_{t}"] = zip_data
                                             st.session_state[f"bulk_menu_count_{t}"] = count
@@ -2296,7 +2318,7 @@ with col_content:
                             from io import BytesIO
                             zip_buffer = BytesIO()
                             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-                                for r in reports:
+                                for r in filtered_for_role:
                                     no_pusat = r.get('no_pusat','UNKNOWN')
                                     safe_nama = "".join(c if c.isalnum() or c in ('-','_') else '_' for c in r.get('nama_pusat','')[:15])
                                     base_filename = f"{r.get('tarikh','')}_{no_pusat}_{safe_nama}"
