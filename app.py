@@ -2336,7 +2336,12 @@ with col_content:
                     with col1:
                         st.write(f"📅 **{t}** - {c} laporan")
                         from collections import Counter
-                        ppd_counter = Counter([r.get('ppd','') or 'TIADA PPD' for r in reports_for_download if r.get('tarikh')==t])
+                        def get_ppd_betul(r):
+                            kod = r.get('kod_ppd','') or str(r.get('no_pusat',''))[:2].upper()
+                            if kod in KOD_PPD_MAPPING:
+                                return KOD_PPD_MAPPING[kod]
+                            return r.get('ppd','') or 'TIADA PPD'
+                        ppd_counter = Counter([get_ppd_betul(r) for r in reports_for_download if r.get('tarikh')==t])
                         ppd_detail = ", ".join([f"{ppd}({count})" for ppd, count in ppd_counter.items()])
                         st.caption(f"PPD: {ppd_detail}")
                     with col2:
