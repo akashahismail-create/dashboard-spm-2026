@@ -1397,6 +1397,10 @@ if not st.session_state.login:
             if found:
                 st.session_state.login = True
                 st.session_state.user = found
+                # v28: Clear cache lama supaya tak tunjuk BK001 bila login BK009
+                st.session_state['current_ppd'] = found.get('ppd','-')
+                st.session_state['current_sekolah'] = found.get('nama_pusat') or found.get('nama','-')
+                st.session_state['current_no_pusat'] = found.get('no_pusat','-')
                 st.success(f"✅ Selamat datang {found['nama']}!")
                 st.balloons()
                 st.rerun()
@@ -1455,10 +1459,19 @@ div[data-testid="stSidebarNav"] {display: none !important;}
 col_menu, col_content = st.columns([1.1, 4], gap="medium")
 
 with col_menu:
-    # FIX INSTANT SYNC - baca dari session_state terkini, terus tukar bila pilih
-    current_ppd_display = st.session_state.get('current_ppd', user.get('ppd','-'))
-    current_sekolah_display = st.session_state.get('current_sekolah', user.get('nama','-'))
-    current_no_pusat_display = st.session_state.get('current_no_pusat', '-')
+    # v28 FIX KASHAH: Untuk KP, guna user data terus, bukan session_state lama - elak BK001 tunjuk bila login BK009
+    if peranan_user == "KP":
+        current_ppd_display = user.get('ppd','-')
+        current_sekolah_display = user.get('nama_pusat') or user.get('nama','-')
+        current_no_pusat_display = user.get('no_pusat','-')
+        # sync session untuk next render
+        st.session_state['current_ppd'] = current_ppd_display
+        st.session_state['current_sekolah'] = current_sekolah_display
+        st.session_state['current_no_pusat'] = current_no_pusat_display
+    else:
+        current_ppd_display = st.session_state.get('current_ppd', user.get('ppd','-'))
+        current_sekolah_display = st.session_state.get('current_sekolah', user.get('nama','-'))
+        current_no_pusat_display = st.session_state.get('current_no_pusat', '-')
     
     st.markdown(f'''
     <div class="card" style="position:sticky; top:18px; padding:16px; border:2px solid #E2E8F0;">
