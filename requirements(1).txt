@@ -1,8 +1,0 @@
-streamlit
-pandas
-openpyxl
-reportlab
-Pillow
-gspread
-google-auth
-fpdf2
