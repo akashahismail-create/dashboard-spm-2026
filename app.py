@@ -2271,7 +2271,12 @@ with col_content:
                     selected_ppd_filter = st.selectbox("Pilih Daerah / PPD", ppd_options, key="jpn_ppd_filter_v2")
                     # Info berapa laporan untuk setiap PPD
                     from collections import Counter
-                    ppd_count_map = Counter([r.get('ppd','') for r in reports_for_download])
+                    def get_ppd_betul_jpn(r):
+                        kod = r.get('kod_ppd','') or str(r.get('no_pusat',''))[:2].upper()
+                        if kod in KOD_PPD_MAPPING:
+                            return KOD_PPD_MAPPING[kod]
+                        return r.get('ppd','') or 'TIADA PPD'
+                    ppd_count_map = Counter([get_ppd_betul_jpn(r) for r in reports_for_download])
                     if selected_ppd_filter != "SEMUA DAERAH":
                         count_sel = ppd_count_map.get(selected_ppd_filter, 0)
                         if count_sel == 0:
@@ -2290,7 +2295,7 @@ with col_content:
                 if not filtered_jpn:
                     if selected_ppd_filter != "SEMUA DAERAH":
                         st.warning(f"📭 Belum ada laporan di daerah {selected_ppd_filter} untuk Tarikh={selected_tarikh_filter}")
-                        st.info(f"Daerah {selected_ppd_filter} belum ada KP yang hantar laporan. Total sistem ada {len(reports_for_download)} laporan: {', '.join([f'{k}={v}' for k,v in Counter([r.get('ppd','') for r in reports_for_download]).items()])}")
+                        st.info(f"Daerah {selected_ppd_filter} belum ada KP yang hantar laporan. Total sistem ada {len(reports_for_download)} laporan: {', '.join([f'{k}={v}' for k,v in ppd_count_map.items()])}")
                     else:
                         st.warning(f"Tiada laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter}")
                 else:
