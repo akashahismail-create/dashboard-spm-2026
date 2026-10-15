@@ -2224,18 +2224,21 @@ with col_content:
     elif menu.startswith("📦"):
         st.markdown('<div class="card"><h3>📦 Download Pukal ZIP - PDF Berlogo</h3><p style="font-size:12px;">JPN/PPD boleh download semua laporan ikut tarikh dalam 1 ZIP file. Semua PDF ada logo LP, tulisan sampai sempadan, garis lurus, tiada jarak, 1 muka TIADA KES.</p></div>', unsafe_allow_html=True)
         
-        # FILTER IKUT PERANAN - PPD hanya daerah dia, JPN semua
+        # FILTER IKUT PERANAN - PPD hanya daerah dia, JPN semua - FIX KASHAH: Filter ikut KOD sahaja, jangan ikut field ppd yang salah
         if peranan_user == "PPD":
             user_ppd = user.get('ppd','')
             user_kod = PPD_TO_KOD.get(user_ppd, '')
             def match_ppd(r):
-                if r.get('ppd') == user_ppd: return True
-                if r.get('kod_ppd') == user_kod: return True
+                # FIX: Hanya guna kod_ppd dan no_pusat prefix, JANGAN guna ppd field (sebab data lama ppd=Klang padahal BH)
+                kod_r = str(r.get('kod_ppd','')).upper()
                 no_pusat = str(r.get('no_pusat','')).upper()
-                if user_kod and no_pusat.startswith(user_kod): return True
+                kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
+                # Match jika kod sama
+                if kod_r and kod_r == user_kod: return True
+                if kod_dari_pusat and kod_dari_pusat == user_kod: return True
                 return False
             reports_for_download = [r for r in reports if match_ppd(r)]
-            st.info(f"📍 PPD {user_ppd} ({user_kod}) - hanya laporan daerah {user_ppd} sahaja")
+            st.info(f"📍 PPD {user_ppd} ({user_kod}) - hanya laporan daerah {user_ppd} sahaja - Filter kod {user_kod}")
         else:
             reports_for_download = reports
             # Breakdown untuk JPN
