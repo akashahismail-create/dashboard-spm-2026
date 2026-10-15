@@ -1400,10 +1400,8 @@ with col_content:
         if peranan_user != "KP":
             st.info("Hanya Ketua Pengawas (KP) boleh isi borang. PPD/JPN/LP boleh view laporan.")
         else:
-            st.markdown("#### 🔍 Pilih Pusat Peperiksaan")
-        
-            # Load centers - RINGKAS: Gabung SPM 504 + Amali 277, tak perlu pilih jenis dah
-            # Auto load semua, simple
+            # v22 FIX KASHAH - KP tak perlu pilih pusat lagi, terus ikut data Excel Github
+            # Load centers dari Excel real - untuk mapping yang betul
             try:
                 centers_spm = load_spm_centers()
             except:
@@ -1412,91 +1410,71 @@ with col_content:
                 centers_amali = load_amali_centers()
             except:
                 centers_amali = []
-            # Gabung, deduplicate by No_Pusat
             centers_dict = {}
             for c in (centers_spm + centers_amali):
                 centers_dict[c["No_Pusat"]] = c
             centers = list(centers_dict.values())
-            exam_mode = "SPM"  # default
-            
-            # AUTO FALLBACK jika Excel tak ada
+            exam_mode = "SPM"
             if not centers:
                 try:
                     centers = get_all_pusat()
                 except:
                     centers = []
-            
-            if not centers:
-                # last fallback - 504 dummy
-                centers = []
-                for kod, ppd in KOD_PPD_MAPPING.items():
-                    for j in range(1, 60):
-                        if len(centers)>=504:
-                            break
-                        centers.append({"Kod_PPD": kod, "No_Pusat": f"{kod}{j:03d}", "Nama_Pusat": f"SMK {ppd} {j}", "PPD": ppd, "Nama_Sekolah": f"SMK {ppd} {j}"})
-                    if len(centers)>=504:
-                        break
-                if centers:
-                    centers[0] = {"Kod_PPD":"BH","No_Pusat":"BH562","Nama_Pusat":"MAAHAD SAINS AL-QURAN AL-AMIN","PPD":"Petaling Perdana","Nama_Sekolah":"MAAHAD SAINS AL-QURAN AL-AMIN"}
-
-            # ensure tidak kosong
             centers = ensure_centers(centers) if 'ensure_centers' in globals() else centers
-        
-            # Step 2: Pilih Daerah - FIX: Dropdown nampak full nama + Maklumat Pusat boleh edit
-            colD1, colD2 = st.columns([1, 2.2])
-            with colD1:
-                selected_ppd = st.selectbox("Pilih Daerah / PPD", PPD_LIST, index=PPD_LIST.index(user["ppd"]) if user["ppd"] in PPD_LIST else 0)
-        
-            # Filter centers by PPD
-            filtered_by_ppd = [c for c in centers if c["PPD"] == selected_ppd]
-        
-            with colD2:
-                if filtered_by_ppd:
-                    sekolah_options = sorted(list(set([c["Nama_Pusat"] for c in filtered_by_ppd])))
-                    selected_sekolah = st.selectbox(f"Pilih Nama Sekolah ({len(sekolah_options)} sekolah di {selected_ppd}) - Taip untuk cari", sekolah_options)
-                    # Caption dipaparkan ringkas sahaja
-                    matched = [c for c in filtered_by_ppd if c["Nama_Pusat"] == selected_sekolah]
-                    if matched:
-                        auto_no_pusat = matched[0]["No_Pusat"]
-                        auto_kod_ppd = matched[0]["Kod_PPD"]
-                    else:
-                        auto_no_pusat = ""
-                        auto_kod_ppd = PPD_TO_KOD.get(selected_ppd, "")
-                else:
-                    st.warning(f"Tiada pusat di {selected_ppd} untuk {jenis_pep}")
-                    selected_sekolah = ""
-                    auto_no_pusat = ""
-                    auto_kod_ppd = ""
+            
+            # Dapatkan info pusat KP dari login - ikut Excel
+            user_no_pusat = str(user.get("no_pusat","")).strip().upper()
+            user_nama_pusat_excel = ""
+            user_ppd_excel = user.get("ppd","")
+            user_kod_excel = user_no_pusat[:2] if len(user_no_pusat)>=2 else ""
+            
+            # Cari dalam Excel real
+            found_in_excel = None
+            for c in centers:
+                if str(c.get("No_Pusat","")).strip().upper() == user_no_pusat:
+                    found_in_excel = c
+                    break
+            if found_in_excel:
+                user_nama_pusat_excel = found_in_excel.get("Nama_Pusat") or found_in_excel.get("Nama_Sekolah","")
+                user_ppd_excel = found_in_excel.get("PPD", user_ppd_excel)
+                user_kod_excel = found_in_excel.get("Kod_PPD", user_kod_excel)
+                selected_sekolah = user_nama_pusat_excel
+                auto_no_pusat = user_no_pusat
+                auto_kod_ppd = user_kod_excel
+                selected_ppd = user_ppd_excel
+            else:
+                # fallback kalau tak jumpa dalam Excel - guna data user
+                selected_sekolah = user.get("nama_pusat", "")
+                auto_no_pusat = user_no_pusat
+                auto_kod_ppd = user_kod_excel
+                selected_ppd = user.get("ppd","")
+                st.warning(f"⚠️ Pusat {user_no_pusat} tak jumpa dalam Excel, guna data login. Pastikan data_v1.1_3_1.xlsx ada.")
+            
+            # PAPARAN LOCKED - Tak ada dropdown lagi untuk KP
+            st.markdown(f'''
+            <div style="background:#f0fdf4; border:2px solid #22c55e; border-radius:12px; padding:16px; margin:12px 0;">
+                <div style="font-weight:800; color:#15803d; font-size:14px; margin-bottom:8px;">✅ Pusat Anda (Locked - Ikut Data Excel)</div>
+                <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:12px; font-size:13px;">
+                    <div><b>No. Pusat:</b><br><span style="font-size:16px; font-weight:800; color:#0f172a;">{auto_no_pusat}</span><br><span style="font-size:11px; color:#64748b;">Kod: {auto_kod_ppd} = {user_ppd_excel}</span></div>
+                    <div><b>Nama Pusat:</b><br><span style="font-weight:700; color:#0f172a;">{selected_sekolah}</span></div>
+                    <div><b>PPD:</b><br><span style="font-weight:600;">{user_ppd_excel}</span><br><span style="font-size:11px; color:#64748b;">ID: {user.get("id")}</span></div>
+                </div>
+                <div style="margin-top:8px; font-size:11px; color:#16a34a;">🔒 Data ini dari data_v1.1_3_1.xlsx - sama macam di Github. KP tidak boleh tukar pusat lain.</div>
+            </div>
+            ''', unsafe_allow_html=True)""
             
             # Maklumat Pusat - RINGKAS & PROFESIONAL (header biru dibuang ikut request Kashah)
             # Tiada header besar, terus papar kotak edit sahaja
             
-            # v20 FIX KASHAH: KP lock ikut No Pusat sendiri - kalau BK002, semua laporan untuk BK002 sahaja
-            # Jangan bagi KP tukar sesuka hati ke pusat lain, elak laporan bercampur
-            user_no_pusat_asal = str(user.get("no_pusat","")).strip().upper()
-            # Jika user memang ada no_pusat (KP sebenar), guna itu terus. Jika admin test, guna auto.
-            if user_no_pusat_asal and user_no_pusat_asal != "-":
-                auto_no_pusat = user_no_pusat_asal
-                # override nama sekolah dari user juga jika ada
-                if user.get("nama_pusat"):
-                    selected_sekolah = user.get("nama_pusat")
-                auto_kod_ppd = auto_no_pusat[:2] if len(auto_no_pusat)>=2 else auto_kod_ppd
-            
-            # Papar tapi lock untuk KP - tak boleh edit pusat lain
-            colM1, colM2, colM3 = st.columns([1, 2, 1])
-            with colM1:
-                if user_no_pusat_asal and user_no_pusat_asal != "-":
-                    edit_no_pusat = st.text_input("No. Pusat (Locked - Pusat Anda)", value=user_no_pusat_asal, disabled=True, key=f"edit_no_locked_{user['id']}")
-                else:
-                    edit_no_pusat = st.text_input("No. Pusat", value=auto_no_pusat, key=f"edit_no_{selected_sekolah}_{selected_ppd}")
-            with colM2:
-                edit_nama_sekolah = st.text_input("Nama Pusat", value=selected_sekolah, disabled=True if user_no_pusat_asal and user_no_pusat_asal != "-" else False, key=f"edit_nama_{selected_sekolah}_{selected_ppd}_{user['id']}")
-            with colM3:
-                edit_kod_ppd = st.text_input("Kod PPD", value=auto_kod_ppd, disabled=True, key=f"edit_kod_{selected_sekolah}_{selected_ppd}")
-            
-            final_no_pusat = user_no_pusat_asal if user_no_pusat_asal and user_no_pusat_asal != "-" else (edit_no_pusat.strip() if edit_no_pusat.strip() else auto_no_pusat)
-            final_nama_sekolah = selected_sekolah if user_no_pusat_asal and user_no_pusat_asal != "-" else (edit_nama_sekolah.strip() if edit_nama_sekolah.strip() else selected_sekolah)
+            # v22 - Final values - terus dari locked box, tak ada edit lagi
+            final_no_pusat = auto_no_pusat
+            final_nama_sekolah = selected_sekolah
             final_kod_ppd = auto_kod_ppd
+            selected_ppd = user_ppd_excel
+            
+            # Hidden - untuk compatibility dengan kod bawah
+            edit_no_pusat = final_no_pusat
+            edit_nama_sekolah = final_nama_sekolah
             
             if not final_no_pusat or not final_nama_sekolah:
                 st.info("👆 Sila pilih Daerah dan Nama Sekolah")
