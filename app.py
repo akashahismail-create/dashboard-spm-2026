@@ -1901,19 +1901,15 @@ with col_content:
 
         filtered = reports
         if peranan_user == "PPD":
-            # FIX robust Petaling Utama
+            # FIX KASHAH: Filter PPD ikut KOD No Pusat sahaja, jangan ikut field ppd yang salah (BJ jadi Klang)
             user_ppd = user["ppd"]
-            user_kod = user.get("kod_ppd","")
+            user_kod = PPD_TO_KOD.get(user_ppd, "") or user.get("kod_ppd","")
             def match_ppd_filter(r):
-                r_ppd = str(r.get("ppd","")).strip()
-                r_kod = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
-                if r_ppd == user_ppd:
-                    return True
-                if user_kod and r_kod == user_kod.upper():
-                    return True
-                if user_ppd == "Petaling Utama" and str(r.get("no_pusat","")).upper().startswith("BK"):
-                    return True
-                if user_ppd == "Petaling Perdana" and str(r.get("no_pusat","")).upper().startswith("BH"):
+                kod_r = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
+                no_pusat = str(r.get("no_pusat","")).upper().strip()
+                kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
+                # Hanya match ikut KOD
+                if user_kod and (kod_r == user_kod.upper() or kod_dari_pusat == user_kod.upper()):
                     return True
                 return False
             filtered = [r for r in filtered if match_ppd_filter(r)]
@@ -1921,18 +1917,18 @@ with col_content:
             filtered = [r for r in filtered if r.get("id_kp")==user["id"]]
     
         if filter_ppd != "Semua":
-            # FIX ROBUST untuk JPN - Petaling Utama include BK
+            # FIX KASHAH: Filter JPN ikut KOD sahaja - Klang hanya BA, Sepang hanya BJ, jangan bercampur
             def match_filter_ppd(r):
-                r_ppd = str(r.get("ppd","")).strip()
-                r_kod = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
-                if r_ppd == filter_ppd:
-                    return True
+                kod_r = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
+                no_pusat = str(r.get("no_pusat","")).upper().strip()
+                kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
                 kod_filter = PPD_TO_KOD.get(filter_ppd, "")
-                if kod_filter and r_kod == kod_filter:
+                # Derive PPD betul dari kod
+                ppd_betul = KOD_PPD_MAPPING.get(kod_r) or KOD_PPD_MAPPING.get(kod_dari_pusat)
+                # Match jika kod sama
+                if kod_filter and (kod_r == kod_filter or kod_dari_pusat == kod_filter):
                     return True
-                if filter_ppd == "Petaling Utama" and (r_ppd in ["BK", "Petaling Utama"] or str(r.get("no_pusat","")).upper().startswith("BK")):
-                    return True
-                if filter_ppd == "Petaling Perdana" and (r_ppd in ["BH", "Petaling Perdana"] or str(r.get("no_pusat","")).upper().startswith("BH")):
+                if ppd_betul and ppd_betul == filter_ppd:
                     return True
                 return False
             filtered = [r for r in filtered if match_filter_ppd(r)]
