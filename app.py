@@ -1471,18 +1471,32 @@ with col_content:
             # Maklumat Pusat - RINGKAS & PROFESIONAL (header biru dibuang ikut request Kashah)
             # Tiada header besar, terus papar kotak edit sahaja
             
-            # FIX: Key include selected_sekolah supaya tak stale bila tukar sekolah
+            # v20 FIX KASHAH: KP lock ikut No Pusat sendiri - kalau BK002, semua laporan untuk BK002 sahaja
+            # Jangan bagi KP tukar sesuka hati ke pusat lain, elak laporan bercampur
+            user_no_pusat_asal = str(user.get("no_pusat","")).strip().upper()
+            # Jika user memang ada no_pusat (KP sebenar), guna itu terus. Jika admin test, guna auto.
+            if user_no_pusat_asal and user_no_pusat_asal != "-":
+                auto_no_pusat = user_no_pusat_asal
+                # override nama sekolah dari user juga jika ada
+                if user.get("nama_pusat"):
+                    selected_sekolah = user.get("nama_pusat")
+                auto_kod_ppd = auto_no_pusat[:2] if len(auto_no_pusat)>=2 else auto_kod_ppd
+            
+            # Papar tapi lock untuk KP - tak boleh edit pusat lain
             colM1, colM2, colM3 = st.columns([1, 2, 1])
             with colM1:
-                edit_no_pusat = st.text_input("No. Pusat", value=auto_no_pusat, key=f"edit_no_{selected_sekolah}_{selected_ppd}")
+                if user_no_pusat_asal and user_no_pusat_asal != "-":
+                    edit_no_pusat = st.text_input("No. Pusat (Locked - Pusat Anda)", value=user_no_pusat_asal, disabled=True, key=f"edit_no_locked_{user['id']}")
+                else:
+                    edit_no_pusat = st.text_input("No. Pusat", value=auto_no_pusat, key=f"edit_no_{selected_sekolah}_{selected_ppd}")
             with colM2:
-                edit_nama_sekolah = st.text_input("Nama Pusat", value=selected_sekolah, key=f"edit_nama_{selected_sekolah}_{selected_ppd}")
+                edit_nama_sekolah = st.text_input("Nama Pusat", value=selected_sekolah, disabled=True if user_no_pusat_asal and user_no_pusat_asal != "-" else False, key=f"edit_nama_{selected_sekolah}_{selected_ppd}_{user['id']}")
             with colM3:
-                edit_kod_ppd = st.text_input("Kod PPD", value=auto_kod_ppd, key=f"edit_kod_{selected_sekolah}_{selected_ppd}")
+                edit_kod_ppd = st.text_input("Kod PPD", value=auto_kod_ppd, disabled=True, key=f"edit_kod_{selected_sekolah}_{selected_ppd}")
             
-            final_no_pusat = edit_no_pusat.strip() if edit_no_pusat.strip() else auto_no_pusat
-            final_nama_sekolah = edit_nama_sekolah.strip() if edit_nama_sekolah.strip() else selected_sekolah
-            final_kod_ppd = edit_kod_ppd.strip() if edit_kod_ppd.strip() else auto_kod_ppd
+            final_no_pusat = user_no_pusat_asal if user_no_pusat_asal and user_no_pusat_asal != "-" else (edit_no_pusat.strip() if edit_no_pusat.strip() else auto_no_pusat)
+            final_nama_sekolah = selected_sekolah if user_no_pusat_asal and user_no_pusat_asal != "-" else (edit_nama_sekolah.strip() if edit_nama_sekolah.strip() else selected_sekolah)
+            final_kod_ppd = auto_kod_ppd
             
             if not final_no_pusat or not final_nama_sekolah:
                 st.info("👆 Sila pilih Daerah dan Nama Sekolah")
@@ -1908,13 +1922,49 @@ with col_content:
 
             # Papar laporan saya (KP)
             st.markdown("---")
-            st.markdown("#### 📜 Laporan Saya (20 Hari Peperiksaan)")
-            my_reports = [r for r in reports if r.get("id_kp")==user["id"]]
+            st.markdown("#### 📜 Laporan Saya (20 Hari Peperiksaan) - LOCKED")
+            # v21 FINAL FIX KASHAH: KP 002 tak boleh tengok laporan pusat lain - STRICT
+            user_pusat_filter = str(user.get("no_pusat","")).strip().upper()
+            user_id_filter = str(user.get("id","")).strip().upper()
+            
+            # Debug info untuk Kashah
+            st.info(f"🔍 Anda login sebagai: {user_id_filter} | Pusat: {user_pusat_filter} | Nama: {user.get('nama_pusat','')}")
+            
+            if user_pusat_filter and user_pusat_filter != "-" and user_pusat_filter != "":
+                # STRICT: id_kp mesti sama DAN no_pusat mesti sama dengan pusat KP
+                my_reports = [r for r in reports if str(r.get("id_kp","")).strip().upper()==user_id_filter and str(r.get("no_pusat","")).strip().upper()==user_pusat_filter]
+                st.success(f"🔒 LOCKED: Menunjukkan {len(my_reports)} laporan untuk {user_pusat_filter} sahaja. Pusat lain disembunyikan.")
+                
+                # Kira berapa laporan bercampur yang disembunyikan
+                mixed_reports = [r for r in reports if str(r.get("id_kp","")).strip().upper()==user_id_filter and str(r.get("no_pusat","")).strip().upper()!=user_pusat_filter]
+                if mixed_reports:
+                    st.warning(f"⚠️ {len(mixed_reports)} laporan lama dari pusat lain (contoh: {', '.join(set([r.get('no_pusat','') for r in mixed_reports][:3]))}) telah disembunyikan. Itu data lama sebelum fix.")
+                    with st.expander("Lihat laporan lama yang disembunyikan (untuk audit)"):
+                        st.dataframe([{"id": r.get("id"), "no_pusat": r.get("no_pusat"), "tarikh": r.get("tarikh")} for r in mixed_reports])
+                        if st.button("🗑️ Padam Semua Laporan Lama Bercampur (Bersihkan)"):
+                            # simpan hanya yang betul
+                            new_reports = [r for r in reports if not (str(r.get("id_kp","")).strip().upper()==user_id_filter and str(r.get("no_pusat","")).strip().upper()!=user_pusat_filter)]
+                            save_reports(new_reports)
+                            st.success("Dibersihkan! Reload...")
+                            st.rerun()
+            else:
+                my_reports = [r for r in reports if str(r.get("id_kp","")).strip().upper()==user_id_filter]
+                st.caption(f"Menunjukkan laporan untuk ID: {user_id_filter}")
+            
             if my_reports:
                 df_my = pd.DataFrame(my_reports)
-                st.dataframe(df_my[["id","tarikh","peperiksaan","no_pusat","tiada_kes"]], use_container_width=True)
+                # tambah info jumlah
+                st.success(f"✅ {len(my_reports)} laporan untuk pusat {my_reports[0].get('no_pusat')} - {my_reports[0].get('nama_pusat','')}")
+                cols_show = [c for c in ["id","tarikh","peperiksaan","no_pusat","nama_pusat","sidang","tiada_kes"] if c in df_my.columns]
+                st.dataframe(df_my[cols_show].sort_values("tarikh", ascending=False), use_container_width=True)
+                # download my reports
+                output = df_my.to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Download Laporan Saya (CSV) - Hanya BK002", data=output, file_name=f"Laporan_{user_pusat_filter}_{user['id']}.csv", mime="text/csv")
             else:
-                st.info("Belum ada laporan. Sila isi borang di atas untuk hari ini.")
+                if user_pusat_filter and user_pusat_filter != "-":
+                    st.info(f"Belum ada laporan untuk {user_pusat_filter}. Sila isi borang di atas. Laporan anda akan kekal untuk {user_pusat_filter} sahaja.")
+                else:
+                    st.info("Belum ada laporan. Sila isi borang di atas untuk hari ini.")
 
     # ========== MENU 2: SENARAI LAPORAN ==========
     elif menu.startswith("📋"):
@@ -1939,6 +1989,14 @@ with col_content:
                 r["ppd"] = KOD_PPD_MAPPING[kod]
                 r["kod_ppd"] = kod
         filtered = reports
+
+        # v20 FIX KASHAH: KP lihat laporan sendiri sahaja - ikut No Pusat sendiri
+        if peranan_user == "KP":
+            kp_pusat = str(user.get("no_pusat","")).strip().upper()
+            if kp_pusat and kp_pusat != "-":
+                filtered = [r for r in filtered if str(r.get("no_pusat","")).strip().upper() == kp_pusat and r.get("id_kp") == user["id"]]
+            else:
+                filtered = [r for r in filtered if r.get("id_kp") == user["id"]]
         if peranan_user == "PPD":
             user_ppd = user["ppd"]
             user_kod = PPD_TO_KOD.get(user_ppd, "") or user.get("kod_ppd","")
