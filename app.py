@@ -99,13 +99,14 @@ div[data-testid="stSelectbox"] div[data-baseweb="select"], div[data-testid="stTe
 """, unsafe_allow_html=True)
 
 # ========== DATA PPD SELANGOR (10 PPD) + KOD PPD ==========
-PPD_LIST = ["Klang", "Kuala Langat", "Kuala Selangor", "Hulu Langat", "Sabak Bernam", "Gombak", "Petaling Perdana", "Sepang", "Petaling Utama"]
+PPD_LIST = ["Klang", "Kuala Langat", "Kuala Selangor", "Hulu Langat", "Hulu Selangor", "Sabak Bernam", "Gombak", "Petaling Perdana", "Sepang", "Petaling Utama"]
 
 KOD_PPD_MAPPING = {
     "BA": "Klang",
     "BB": "Kuala Langat",
     "BC": "Kuala Selangor",
     "BD": "Hulu Langat",
+    "BE": "Hulu Selangor",
     "BF": "Sabak Bernam",
     "BG": "Gombak",
     "BH": "Petaling Perdana",
@@ -137,6 +138,7 @@ PPD_TO_KOD = {
     "Kuala Langat": "BB",
     "Kuala Selangor": "BC",
     "Hulu Langat": "BD",
+    "Hulu Selangor": "BE",
     "Sabak Bernam": "BF",
     "Gombak": "BG",
     "Petaling Perdana": "BH",
@@ -305,6 +307,7 @@ def load_users():
     "Kuala Langat": "BB",
     "Kuala Selangor": "BC",
     "Hulu Langat": "BD",
+    "Hulu Selangor": "BE",
     "Sabak Bernam": "BF",
     "Gombak": "BG",
     "Petaling Perdana": "BH",
