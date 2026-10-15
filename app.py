@@ -119,6 +119,37 @@ KOD_PPD_MAPPING = {
 
 
 def get_all_pusat():
+    # v19: cuba load data real dari Excel jika ada, kekal fungsi asal sebagai fallback
+    try:
+        import pandas as pd, os
+        for p in ["data_v1.1_3_1.xlsx", "data/data_v1.1_3_1.xlsx", "/mnt/data/data_v1.1_3_1.xlsx", "data_v1.1_3_1 (1).xlsx"]:
+            if os.path.exists(p):
+                try:
+                    df = pd.read_excel(p)
+                    centers=[]
+                    for _, row in df.iterrows():
+                        kod = str(row.get("Kod_PPD","")).strip().upper()
+                        if not kod:
+                            continue
+                        centers.append({
+                            "Kod_PPD": kod,
+                            "No_Pusat": str(row.get("No_Pusat","")).strip(),
+                            "Nama_Pusat": str(row.get("Nama_Pusat","")).strip(),
+                            "PPD": KOD_PPD_MAPPING.get(kod, str(row.get("PPD", KOD_PPD_MAPPING.get(kod,"")))),
+                            "Nama_Sekolah": str(row.get("Nama_Pusat","")).strip(),
+                            "Bil_Calon": int(row.get("Bil_Calon_Pusat",0)) if pd.notna(row.get("Bil_Calon_Pusat",0)) else 0
+                        })
+                    if len(centers)>=400:
+                        # pastikan BH562 kekal
+                        has_bh562 = any(c["No_Pusat"]=="BH562" for c in centers)
+                        if not has_bh562:
+                            centers[0] = {"Kod_PPD":"BH","No_Pusat":"BH562","Nama_Pusat":"MAAHAD SAINS AL-QURAN AL-AMIN","PPD":"Petaling Perdana","Nama_Sekolah":"MAAHAD SAINS AL-QURAN AL-AMIN"}
+                        return centers
+                except Exception as e:
+                    pass
+    except:
+        pass
+    # fallback asal - dummy
     centers=[]
     for kod, ppd in KOD_PPD_MAPPING.items():
         for j in range(1, 60):
@@ -2646,16 +2677,24 @@ with col_content:
                 user_ppd = user["ppd"]
                 user_kod = PPD_TO_KOD.get(user_ppd,"") or user.get("kod_ppd","")
                 def match_stat(r):
+                    # v19 FIX: buang return False awal yang buat kod BK/BH tak pernah check
                     kod_r = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
                     no_pusat = str(r.get("no_pusat","")).upper()
                     kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
+                    r_ppd = str(r.get("ppd","")).strip()
                     if user_kod and (kod_r == user_kod.upper() or kod_dari_pusat == user_kod.upper()):
                         return True
-                    return False
-                    # Also check all BK codes
+                    # check ppd name directly
+                    if r_ppd == user_ppd:
+                        return True
+                    if r_ppd == user_kod:
+                        return True
+                    # khas untuk Petaling Utama / Perdana
                     if user_ppd == "Petaling Utama":
-                        # Petaling Utama reports might have ppd = BK or Petaling Utama
-                        if r_ppd in ["BK", "Petaling Utama"] or str(r.get("no_pusat","")).upper().startswith("BK"):
+                        if r_ppd in ["BK", "Petaling Utama"] or no_pusat.startswith("BK"):
+                            return True
+                    if user_ppd == "Petaling Perdana":
+                        if r_ppd in ["BH", "Petaling Perdana"] or no_pusat.startswith("BH"):
                             return True
                     return False
                 my_reports = [r for r in reports if match_stat(r)]
