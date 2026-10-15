@@ -1461,7 +1461,7 @@ with col_content:
                 </div>
                 <div style="margin-top:8px; font-size:11px; color:#16a34a;">🔒 Data ini dari data_v1.1_3_1.xlsx - sama macam di Github. KP tidak boleh tukar pusat lain.</div>
             </div>
-            ''', unsafe_allow_html=True)""
+            ''', unsafe_allow_html=True)
             
             # Maklumat Pusat - RINGKAS & PROFESIONAL (header biru dibuang ikut request Kashah)
             # Tiada header besar, terus papar kotak edit sahaja
