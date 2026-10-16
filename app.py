@@ -251,7 +251,18 @@ def ensure_centers(centers):
         return get_all_pusat()
     return centers
 
-PPD_TO_KOD = {v:k for k,v in KOD_PPD_MAPPING.items()}
+PPD_TO_KOD = {
+    "Klang": "BA",
+    "Kuala Langat": "BB",
+    "Kuala Selangor": "BC",
+    "Hulu Langat": "BD",
+    "Hulu Selangor": "BE",
+    "Sabak Bernam": "BF",
+    "Gombak": "BG",
+    "Petaling Perdana": "BH",
+    "Sepang": "BJ",
+    "Petaling Utama": "BK"
+}
 
 PEPERIKSAAN_LIST = [
     "SPM 2026", 
@@ -458,7 +469,18 @@ def load_users():
     users.append({"id":"LP001","nama":"Lembaga Peperiksaan","peranan":"LP","ppd":"Semua","no_pusat":"-","password":"2026","telefon":""})
     # 10 PPD - PASSWORD KOD PPD IKUT CADANGAN KASHAH: BA=Klang, BB=Kuala Langat dll - MUDAH INGAT
     # Mapping Kod ke PPD dari KOD_PPD_MAPPING
-    PPD_TO_KOD = {v:k for k,v in KOD_PPD_MAPPING.items()}  # Klang->BA etc
+    PPD_TO_KOD = {
+    "Klang": "BA",
+    "Kuala Langat": "BB",
+    "Kuala Selangor": "BC",
+    "Hulu Langat": "BD",
+    "Hulu Selangor": "BE",
+    "Sabak Bernam": "BF",
+    "Gombak": "BG",
+    "Petaling Perdana": "BH",
+    "Sepang": "BJ",
+    "Petaling Utama": "BK"
+}  # Klang->BA etc
     for i, ppd in enumerate(PPD_LIST):
         kod = PPD_TO_KOD.get(ppd, f"PPD{i+1:02d}")
         # Password = kod kecil dan besar - mudah: ba, BA, klang, ppd01 semua boleh
@@ -2157,18 +2179,8 @@ with col_content:
             filtered = [r for r in filtered if r.get("id_kp")==user["id"]]
     
         if filter_ppd != "Semua":
-            def match_filter_ppd(r):
-                kod_r = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
-                no_pusat = str(r.get("no_pusat","")).upper().strip()
-                kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
-                kod_filter = PPD_TO_KOD.get(filter_ppd, "")
-                ppd_betul = KOD_PPD_MAPPING.get(kod_r) or KOD_PPD_MAPPING.get(kod_dari_pusat)
-                if kod_filter and (kod_r == kod_filter or kod_dari_pusat == kod_filter):
-                    return True
-                if ppd_betul and ppd_betul == filter_ppd:
-                    return True
-                return False
-            filtered = [r for r in filtered if match_filter_ppd(r)]
+            # v31 STRICT: Filter Senarai Laporan JPN ikut No Pusat prefix - tak campur
+            filtered = [r for r in filtered if is_report_for_ppd_strict(r, filter_ppd)]
         if filter_tarikh:
             filtered = [r for r in filtered if r.get("tarikh")==filter_tarikh.strftime("%Y-%m-%d")]
         if filter_pep != "Semua":
@@ -2496,12 +2508,8 @@ with col_content:
                 
                 filtered_jpn = reports_for_download
                 if selected_ppd_filter != "SEMUA DAERAH":
-                    def match_ppd_dl(r):
-                        kod = str(r.get('kod_ppd','') or r.get('no_pusat','')[:2]).upper()
-                        ppd_betul = KOD_PPD_MAPPING.get(kod, r.get('ppd',''))
-                        kod_filter = PPD_TO_KOD.get(selected_ppd_filter,'')
-                        return ppd_betul == selected_ppd_filter or kod == kod_filter
-                    filtered_jpn = [r for r in filtered_jpn if match_ppd_dl(r)]
+                    # v31 STRICT JPN Download
+                    filtered_jpn = [r for r in filtered_jpn if is_report_for_ppd_strict(r, selected_ppd_filter)]
                 if selected_tarikh_filter != "SEMUA TARIKH":
                     filtered_jpn = [r for r in filtered_jpn if r.get('tarikh') == selected_tarikh_filter]
                 
@@ -2783,20 +2791,8 @@ with col_content:
                 st.markdown("#### Laporan Ikut PPD (10 PPD)")
                 ppd_stats = []
                 for ppd in PPD_LIST:
-                    kod = PPD_TO_KOD.get(ppd, "")
-                    def match_count(r):
-                        r_ppd = str(r.get("ppd","")).strip()
-                        r_kod = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
-                        if r_ppd == ppd:
-                            return True
-                        if kod and r_kod == kod:
-                            return True
-                        if ppd == "Petaling Utama" and str(r.get("no_pusat","")).upper().startswith("BK"):
-                            return True
-                        if ppd == "Petaling Perdana" and str(r.get("no_pusat","")).upper().startswith("BH"):
-                            return True
-                        return False
-                    count = len([r for r in reports if match_count(r)])
+                    # v31 JPN STRICT: guna helper yang sama macam PPD - strict by No Pusat prefix
+                    count = len([r for r in reports if is_report_for_ppd_strict(r, ppd)])
                     ppd_stats.append({"PPD": ppd, "Laporan": count, "KP": len([u for u in load_users() if u.get("ppd")==ppd and u["peranan"]=="KP"])})
                 st.dataframe(pd.DataFrame(ppd_stats), use_container_width=True)
             
@@ -2861,12 +2857,8 @@ with col_content:
                 # v29 STRICT STATISTIK: PPD Klang hanya kira BA, bukan BB/BC etc - ikut No Pusat prefix
                 my_reports = [r for r in reports if is_report_for_ppd_strict(r, user_ppd)]
                 if len(my_reports)==0 and len(reports)>0:
-                    from collections import Counter
-                    prefix_all = Counter([str(r.get('no_pusat',''))[:2].upper() for r in reports])
-                    st.warning(f"Debug STRICT: {len(reports)} total, 0 untuk {user_ppd} {allowed_kods}. Kod dalam sistem: {dict(prefix_all)}")
-                # Debug info if 0
-                if len(my_reports)==0 and len(reports)>0:
-                    st.warning(f"Debug Statistik: {len(reports)} total laporan, tapi 0 untuk {user_ppd}. PPD dalam reports: {list(set([r.get('ppd','') for r in reports]))[:10]}, No Pusat: {list(set([str(r.get('no_pusat',''))[:2] for r in reports]))[:10]}")
+                    # v31: tak tunjuk debug kuning dah, bersih untuk user
+                    st.info(f"Belum ada laporan untuk PPD {user_ppd}. KP daerah {user_ppd} ({', '.join(allowed_kods)}) belum hantar laporan lagi.")
             elif peranan_user == "KP":
                 my_reports = [r for r in reports if r.get("id_kp")==user["id"]]
         
