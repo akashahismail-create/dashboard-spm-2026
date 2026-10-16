@@ -122,15 +122,15 @@ KOD_PPD_MAPPING = {
 PPD_TO_KODS_STRICT = {
     "Klang": ["BA"],
     "Kuala Langat": ["BB"],
-    "Sepang": ["BC"],
+    "Kuala Selangor": ["BC"],
     "Hulu Langat": ["BD"],
     "Hulu Selangor": ["BE"],
-    "Gombak": ["BF", "BG"],
-    "Petaling Perdana": ["BH", "BJ"],
+    "Sabak Bernam": ["BF"],
+    "Gombak": ["BG"],
+    "Petaling Perdana": ["BH"],
+    "Sepang": ["BJ"],
     "Petaling Utama": ["BK"],
-    "Kuala Selangor": ["BL"],
-    "Sabak Bernam": ["BM"],
-    "Petaling": ["BH", "BJ", "BK"]  # fallback
+    "Petaling": ["BH", "BK", "BJ"]  # fallback
 }
 
 def get_kods_for_ppd(ppd_name):
