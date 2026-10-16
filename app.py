@@ -2523,10 +2523,10 @@ with col_content:
             from collections import Counter
             tarikh_counts = Counter([r.get('tarikh','') for r in reports_for_download if r.get('tarikh')])
             
-            # JPN: Pilihan Daerah + Tarikh
+            # JPN: Pilihan Daerah + Tarikh + Peperiksaan (v37 - KASHAH: tak campur peperiksaan)
             if peranan_user == "ADMIN_JPN" or peranan_user == "LP":
-                st.markdown("#### 🎯 Pilih Daerah & Tarikh (JPN - Semua Daerah)")
-                col_ppd, col_tarikh = st.columns(2)
+                st.markdown("#### 🎯 Pilih Daerah, Tarikh & Peperiksaan (JPN - Semua Daerah)")
+                col_ppd, col_tarikh, col_pep = st.columns(3)
                 with col_ppd:
                     # FIX KASHAH: Dropdown JPN mesti tunjuk SEMUA DAERAH, bukan hanya Klang sahaja - ambil dari PPD_LIST penuh
                     def get_ppd_betul_dl(r):
@@ -2545,6 +2545,24 @@ with col_content:
                     all_tarikhs = sorted(list(set([r.get('tarikh','') for r in reports_for_download if r.get('tarikh')])), reverse=True)
                     tarikh_options = ["SEMUA TARIKH"] + all_tarikhs
                     selected_tarikh_filter = st.selectbox("Pilih Tarikh", tarikh_options, key="jpn_tarikh_filter_v2")
+                with col_pep:
+                    # v37: Tambah pilihan peperiksaan - supaya tak campur SPM dengan Amali, Bertutur etc
+                    all_peps = sorted(list(set([str(r.get('peperiksaan','')).strip().upper() for r in reports_for_download if r.get('peperiksaan')])))
+                    # Guna PEPERIKSAAN_LIST asal + yang ada dalam data
+                    pep_options = ["SEMUA PEPERIKSAAN"] + (PEPERIKSAAN_LIST if 'PEPERIKSAAN_LIST' in globals() else all_peps) 
+                    # Pastikan unique dan uppercase
+                    seen = set()
+                    pep_options_unique = []
+                    for p in pep_options:
+                        pu = str(p).strip().upper()
+                        if pu not in seen:
+                            seen.add(pu)
+                            pep_options_unique.append(p)
+                    # Jika data ada peperiksaan yang tak ada dalam list, tambah
+                    for ap in all_peps:
+                        if ap not in seen:
+                            pep_options_unique.append(ap)
+                    selected_pep_filter = st.selectbox("Pilih Peperiksaan", pep_options_unique, key="jpn_pep_filter_v37")
                 
                 filtered_jpn = reports_for_download
                 if selected_ppd_filter != "SEMUA DAERAH":
@@ -2552,19 +2570,22 @@ with col_content:
                     filtered_jpn = [r for r in filtered_jpn if is_report_for_ppd_strict(r, selected_ppd_filter)]
                 if selected_tarikh_filter != "SEMUA TARIKH":
                     filtered_jpn = [r for r in filtered_jpn if r.get('tarikh') == selected_tarikh_filter]
+                if selected_pep_filter != "SEMUA PEPERIKSAAN":
+                    filtered_jpn = [r for r in filtered_jpn if str(r.get('peperiksaan','')).strip().upper() == str(selected_pep_filter).strip().upper()]
                 
                 if not filtered_jpn:
-                    if selected_ppd_filter != "SEMUA DAERAH":
-                        st.warning(f"📭 Belum ada laporan di daerah {selected_ppd_filter} untuk Tarikh={selected_tarikh_filter}")
+                    if selected_ppd_filter != "SEMUA DAERAH" or selected_pep_filter != "SEMUA PEPERIKSAAN":
+                        st.warning(f"📭 Belum ada laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter}, Peperiksaan={selected_pep_filter}")
                         ppd_counts_real = Counter([KOD_PPD_MAPPING.get(str(r.get('kod_ppd','') or r.get('no_pusat','')[:2]).upper(), r.get('ppd','')) for r in reports_for_download])
-                        st.info(f"Daerah {selected_ppd_filter} belum ada KP yang hantar laporan. Total sistem ada {len(reports_for_download)} laporan: {', '.join([f'{k}={v}' for k,v in ppd_counts_real.items()])}")
+                        pep_counts_real = Counter([str(r.get('peperiksaan','')).strip().upper() for r in reports_for_download])
+                        st.info(f"Filter tiada data. Total sistem {len(reports_for_download)} laporan: PPD={', '.join([f'{k}={v}' for k,v in ppd_counts_real.items()])} | Pep={', '.join([f'{k}={v}' for k,v in pep_counts_real.items()])}")
                     else:
-                        st.warning(f"Tiada laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter}")
+                        st.warning(f"Tiada laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter}, Peperiksaan={selected_pep_filter}")
                 else:
-                    st.success(f"✅ {len(filtered_jpn)} laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter} akan dijana")
+                    st.success(f"✅ {len(filtered_jpn)} laporan untuk Daerah={selected_ppd_filter}, Tarikh={selected_tarikh_filter}, Peperiksaan={selected_pep_filter} akan dijana")
                     with st.expander(f"📋 Lihat {len(filtered_jpn)} laporan", expanded=False):
                         for r in filtered_jpn[:20]:
-                            st.write(f"- {r.get('tarikh')} | {r.get('no_pusat')} | {r.get('nama_pusat','')[:30]} | {r.get('ppd')} | {r.get('nama_kp','')[:20]}")
+                            st.write(f"- {r.get('tarikh')} | {r.get('no_pusat')} | {r.get('nama_pusat','')[:30]} | {r.get('ppd')} | {r.get('peperiksaan','')} | {r.get('nama_kp','')[:20]}")
                     
                     col_jana, col_dl = st.columns(2)
                     with col_jana:
@@ -2601,10 +2622,11 @@ with col_content:
                     with col_dl:
                         if "jpn_filtered_zip" in st.session_state:
                             count = st.session_state.get("jpn_filtered_count", len(filtered_jpn))
+                            safe_pep = "".join(c if c.isalnum() else "_" for c in str(selected_pep_filter)[:20])
                             st.download_button(
-                                label=f"⬇️ Download ZIP ({count})",
+                                label=f"⬇️ Download ZIP ({count}) - {selected_pep_filter}",
                                 data=st.session_state["jpn_filtered_zip"],
-                                file_name=f"BLPP_JPN_{selected_ppd_filter}_{selected_tarikh_filter}_{count}laporan.zip",
+                                file_name=f"BLPP_JPN_{selected_ppd_filter}_{selected_tarikh_filter}_{safe_pep}_{count}laporan.zip",
                                 mime="application/zip",
                                 key="jpn_dl_filtered_v2",
                                 type="primary",
