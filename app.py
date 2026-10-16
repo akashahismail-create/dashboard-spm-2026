@@ -723,6 +723,8 @@ def jana_blpp_html(report):
         .arahan li {{ text-align:justify; width:100%; }}
         .arahan ol {{ margin:0; padding-left:18px; }}
         table {{ width:100%; border-collapse:collapse; table-layout:fixed; margin:0; border-spacing:0; }}
+        table + table {{ margin-top:0 !important; }}
+        th, td {{ border:1.2px solid #000; }}
         th, td {{ word-wrap:break-word; white-space:pre-wrap; word-break:break-word; border:1.2px solid #000; padding:4px 5px; font-size:9pt; }}
         th {{ text-align:center; font-weight:bold; vertical-align:middle; }}
         td {{ text-align:center; vertical-align:middle; }}
@@ -743,9 +745,9 @@ def jana_blpp_html(report):
         </ol></div>
         <table style="margin-top:10px; margin-bottom:0px; border-bottom:none;">
             <tr>
-                <th style="width:21.66%;">NO. PUSAT</th>
-                <th style="width:47.29%;">NAMA PUSAT PEPERIKSAAN</th>
-                <th style="width:31.04%; font-size:8.5pt; line-height:1.15;">
+                <th style="width:22%;">NO. PUSAT</th>
+                <th style="width:47%;">NAMA PUSAT PEPERIKSAAN</th>
+                <th style="width:31%; font-size:8.5pt; line-height:1.15;">
                     NAMA KETUA PENGAWAS<br>PEPERIKSAAN/KETUA PENGAWAS<br>AMALI/KETUA PENTAKSIR/ASSESSOR
                 </th>
             </tr>
