@@ -722,7 +722,7 @@ def jana_blpp_html(report):
         .arahan ol {{ margin:0; padding-left:14px; width:100%; text-align:justify; }}
         .arahan li {{ text-align:justify; width:100%; }}
         .arahan ol {{ margin:0; padding-left:18px; }}
-        table {{ width:100%; border-collapse:collapse; table-layout:fixed; }}
+        table {{ width:100%; border-collapse:collapse; table-layout:fixed; margin:0; border-spacing:0; }}
         th, td {{ word-wrap:break-word; white-space:pre-wrap; word-break:break-word; border:1.2px solid #000; padding:4px 5px; font-size:9pt; }}
         th {{ text-align:center; font-weight:bold; vertical-align:middle; }}
         td {{ text-align:center; vertical-align:middle; }}
@@ -741,7 +741,7 @@ def jana_blpp_html(report):
             <li>Borang ini hendaklah digunakan semasa peperiksaan untuk melaporkan mengenai perkara-perkara di luar dugaan yang berlaku kepada calon seperti sakit secara tiba-tiba, kemalangan, ditahan polis dan lain-lain.</li>
             <li>Jika ada kes, Ketua Pengawas Peperiksaan/Ketua Pengawas Amali/Ketua Pentaksir/Assessor dikehendaki mengisi borang ini dan menyerahkannya kepada Penyelia Kawasan untuk dihantar melalui e-mel pada hari yang sama kepada Pengarah Peperiksaan, Lembaga Peperiksaan (u.p.: Unit Menengah Atas/Unit Pra Universiti/Unit Vokasional) dan Pengarah Pendidikan Negeri, Jabatan Pendidikan Negeri (u.p.: Sektor Pentaksiran dan Peperiksaan).</li>
         </ol></div>
-        <table style="margin-top:10px;">
+        <table style="margin-top:10px; margin-bottom:0px; border-bottom:none;">
             <tr>
                 <th style="width:21.66%;">NO. PUSAT</th>
                 <th style="width:47.29%;">NAMA PUSAT PEPERIKSAAN</th>
@@ -750,12 +750,12 @@ def jana_blpp_html(report):
                 </th>
             </tr>
             <tr>
-                <td style="font-weight:bold; height:24px;">{no_pusat}</td>
-                <td style="font-weight:bold;">{nama_pusat}</td>
-                <td style="font-weight:bold; word-wrap:break-word;">{nama_kp}</td>
+                <td style="font-weight:bold; height:24px; border-bottom:none;">{no_pusat}</td>
+                <td style="font-weight:bold; border-bottom:none;">{nama_pusat}</td>
+                <td style="font-weight:bold; word-wrap:break-word; border-bottom:none;">{nama_kp}</td>
             </tr>
         </table>
-        <table style="margin-top:14px;">
+        <table style="margin-top:0px; border-top:none;">
             <tr>
                 <th style="width:6%;">BIL.</th>
                 <th style="width:16%;">ANGKA GILIRAN</th>
