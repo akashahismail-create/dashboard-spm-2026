@@ -743,21 +743,35 @@ def jana_blpp_html(report):
             <li>Borang ini hendaklah digunakan semasa peperiksaan untuk melaporkan mengenai perkara-perkara di luar dugaan yang berlaku kepada calon seperti sakit secara tiba-tiba, kemalangan, ditahan polis dan lain-lain.</li>
             <li>Jika ada kes, Ketua Pengawas Peperiksaan/Ketua Pengawas Amali/Ketua Pentaksir/Assessor dikehendaki mengisi borang ini dan menyerahkannya kepada Penyelia Kawasan untuk dihantar melalui e-mel pada hari yang sama kepada Pengarah Peperiksaan, Lembaga Peperiksaan (u.p.: Unit Menengah Atas/Unit Pra Universiti/Unit Vokasional) dan Pengarah Pendidikan Negeri, Jabatan Pendidikan Negeri (u.p.: Sektor Pentaksiran dan Peperiksaan).</li>
         </ol></div>
-        <table style="margin-top:10px; margin-bottom:0px; border-bottom:none;">
+        <table style="margin-top:10px; margin-bottom:0px; border-bottom:none; border-collapse:collapse;">
+            <colgroup>
+                <col style="width:6%;">
+                <col style="width:16%;">
+                <col style="width:16%;">
+                <col style="width:31%;">
+                <col style="width:31%;">
+            </colgroup>
             <tr>
-                <th style="width:22%;">NO. PUSAT</th>
-                <th style="width:47%;">NAMA PUSAT PEPERIKSAAN</th>
+                <th colspan="2" style="width:22%;">NO. PUSAT</th>
+                <th colspan="2" style="width:47%;">NAMA PUSAT PEPERIKSAAN</th>
                 <th style="width:31%; font-size:8.5pt; line-height:1.15;">
                     NAMA KETUA PENGAWAS<br>PEPERIKSAAN/KETUA PENGAWAS<br>AMALI/KETUA PENTAKSIR/ASSESSOR
                 </th>
             </tr>
             <tr>
-                <td style="font-weight:bold; height:24px; border-bottom:none;">{no_pusat}</td>
-                <td style="font-weight:bold; border-bottom:none;">{nama_pusat}</td>
-                <td style="font-weight:bold; word-wrap:break-word; border-bottom:none;">{nama_kp}</td>
+                <td colspan="2" style="font-weight:bold; height:24px; border-bottom:none; text-align:center;">{no_pusat}</td>
+                <td colspan="2" style="font-weight:bold; border-bottom:none; text-align:center;">{nama_pusat}</td>
+                <td style="font-weight:bold; word-wrap:break-word; border-bottom:none; text-align:center;">{nama_kp}</td>
             </tr>
         </table>
-        <table style="margin-top:0px; border-top:none;">
+        <table style="margin-top:0px; border-top:none; border-collapse:collapse;">
+            <colgroup>
+                <col style="width:6%;">
+                <col style="width:16%;">
+                <col style="width:16%;">
+                <col style="width:31%;">
+                <col style="width:31%;">
+            </colgroup>
             <tr>
                 <th style="width:6%;">BIL.</th>
                 <th style="width:16%;">ANGKA GILIRAN</th>
