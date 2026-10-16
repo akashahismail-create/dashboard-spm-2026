@@ -118,6 +118,66 @@ KOD_PPD_MAPPING = {
 }
 
 
+# ===== v29 STRICT PPD FILTER - KASHAH: PPD Klang jangan campur PPD lain - STRICT BY NO PUSAT PREFIX =====
+PPD_TO_KODS_STRICT = {
+    "Klang": ["BA"],
+    "Kuala Langat": ["BB"],
+    "Sepang": ["BC"],
+    "Hulu Langat": ["BD"],
+    "Hulu Selangor": ["BE"],
+    "Gombak": ["BF", "BG"],
+    "Petaling Perdana": ["BH", "BJ"],
+    "Petaling Utama": ["BK"],
+    "Kuala Selangor": ["BL"],
+    "Sabak Bernam": ["BM"],
+    "Petaling": ["BH", "BJ", "BK"]  # fallback
+}
+
+def get_kods_for_ppd(ppd_name):
+    """Return list of kod like ['BA'] for Klang, ['BF','BG'] for Gombak"""
+    if not ppd_name:
+        return []
+    ppd_name = str(ppd_name).strip()
+    # Direct mapping
+    if ppd_name in PPD_TO_KODS_STRICT:
+        return PPD_TO_KODS_STRICT[ppd_name]
+    # If ppd_name is kod like BA, return [BA]
+    if len(ppd_name)==2 and ppd_name.upper() in KOD_PPD_MAPPING:
+        return [ppd_name.upper()]
+    # Try find by containing name
+    for k, v in PPD_TO_KODS_STRICT.items():
+        if k.lower() in ppd_name.lower() or ppd_name.lower() in k.lower():
+            return v
+    return []
+
+def is_report_for_ppd_strict(report, target_ppd):
+    """STRICT: Check if report belongs to target PPD by No Pusat prefix ONLY - no mixing"""
+    no_pusat = str(report.get("no_pusat","") or "").strip().upper()
+    kod_ppd_field = str(report.get("kod_ppd","") or "").strip().upper()
+    # Get allowed kods for this PPD
+    allowed_kods = get_kods_for_ppd(target_ppd)
+    if not allowed_kods:
+        return False
+    # Check prefix from no_pusat (most reliable - from Excel)
+    prefix = no_pusat[:2] if len(no_pusat)>=2 else ""
+    if prefix and prefix in allowed_kods:
+        return True
+    # Check kod_ppd field
+    if kod_ppd_field and kod_ppd_field in allowed_kods:
+        return True
+    return False
+
+def is_report_for_ppd_kod_strict(report, target_kod):
+    """STRICT by kod: BA -> only BA reports"""
+    target_kod = str(target_kod).strip().upper()
+    no_pusat = str(report.get("no_pusat","") or "").strip().upper()
+    kod_field = str(report.get("kod_ppd","") or "").strip().upper()
+    prefix = no_pusat[:2] if len(no_pusat)>=2 else ""
+    return prefix == target_kod or kod_field == target_kod
+
+
+
+
 def get_all_pusat():
     # v24 FINAL: Super flexible - support data_v1.1(3)(1).xlsx macam di Github Kashah
     try:
@@ -2091,15 +2151,8 @@ with col_content:
                 filtered = [r for r in filtered if r.get("id_kp") == user["id"]]
         if peranan_user == "PPD":
             user_ppd = user["ppd"]
-            user_kod = PPD_TO_KOD.get(user_ppd, "") or user.get("kod_ppd","")
-            def match_ppd_filter(r):
-                kod_r = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
-                no_pusat = str(r.get("no_pusat","")).upper().strip()
-                kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
-                if user_kod and (kod_r == user_kod.upper() or kod_dari_pusat == user_kod.upper()):
-                    return True
-                return False
-            filtered = [r for r in filtered if match_ppd_filter(r)]
+            # v29 STRICT: PPD Klang hanya nampak BA, tak campur BB/BC etc - ikut No Pusat prefix sahaja
+            filtered = [r for r in filtered if is_report_for_ppd_strict(r, user_ppd)]
         elif peranan_user == "KP":
             filtered = [r for r in filtered if r.get("id_kp")==user["id"]]
     
@@ -2155,15 +2208,13 @@ with col_content:
             st.caption(f"📊 Total laporan dalam sistem: {len(reports)} | PPD anda: {user['ppd']} | Login ID: {user['id']}")
             
             if peranan_user == "PPD":
-                # Jangan filter dulu - biar PPD boleh pilih mana-mana PPD (tapi default PPD dia)
-                # Kalau nak strict PPD hanya nampak PPD dia, uncomment bawah
-                # available_reports = [r for r in reports if r.get("ppd")==user["ppd"]]
-                st.info(f"📍 Anda login sebagai PPD {user['ppd']} - Total {len(reports)} laporan dalam sistem")
+                st.info(f"📍 Anda login sebagai PPD {user['ppd']} - STRICT MODE: Hanya nampak pusat PPD {user['ppd']} sahaja, tak campur PPD lain")
+                # v29 DEBUG - tunjuk total untuk verify strict
                 if len(reports) > 0:
-                    ppd_counts = {}
-                    for r in reports:
-                        ppd_counts[r.get('ppd','-')] = ppd_counts.get(r.get('ppd','-'), 0) + 1
-                    st.caption(f"📋 Pecahan laporan ikut PPD: {ppd_counts}")
+                    # Kira ikut prefix sebenar
+                    from collections import Counter
+                    prefix_counts = Counter([str(r.get('no_pusat',''))[:2].upper() for r in reports])
+                    st.caption(f"📋 Total sistem {len(reports)} laporan ikut Kod: {dict(prefix_counts)} | PPD anda akan filter ikut {get_kods_for_ppd(user['ppd'])}")
             
             elif peranan_user == "KP":
                 available_reports = [r for r in reports if r.get("id_kp")==user["id"]]
@@ -2172,20 +2223,10 @@ with col_content:
             if peranan_user == "PPD":
                 sel_ppd = user["ppd"]
                 kod_ppd_user = user.get("kod_ppd","")
-                st.markdown(f"<div style='background:#EEF2FF; padding:10px; border-radius:8px; border-left:4px solid #3B82F6;'><b>📍 PPD Anda: {sel_ppd} ({kod_ppd_user})</b> - Auto papar laporan PPD {sel_ppd} sahaja</div>", unsafe_allow_html=True)
-                def match_ppd_dash(r):
-                    r_ppd = str(r.get("ppd","")).strip()
-                    r_kod = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
-                    if r_ppd == sel_ppd:
-                        return True
-                    if kod_ppd_user and r_kod == kod_ppd_user.upper():
-                        return True
-                    if sel_ppd == "Petaling Utama" and str(r.get("no_pusat","")).upper().startswith("BK"):
-                        return True
-                    if sel_ppd == "Petaling Perdana" and str(r.get("no_pusat","")).upper().startswith("BH"):
-                        return True
-                    return False
-                available_reports = [r for r in reports if match_ppd_dash(r)]
+                allowed = get_kods_for_ppd(sel_ppd)
+                st.markdown(f"<div style='background:#EEF2FF; padding:10px; border-radius:8px; border-left:4px solid #3B82F6;'><b>📍 PPD Anda: {sel_ppd} ({kod_ppd_user}) - Kod: {allowed}</b> - STRICT: Hanya pusat {allowed} sahaja, tak campur PPD lain</div>", unsafe_allow_html=True)
+                # v29 STRICT: Filter hanya ikut No Pusat prefix, bukan field ppd yang boleh salah
+                available_reports = [r for r in reports if is_report_for_ppd_strict(r, sel_ppd)]
                 st.caption(f"✅ {len(available_reports)} laporan untuk PPD {sel_ppd} ditemui")
                 if len(available_reports)==0 and len(reports)>0:
                     st.warning(f"⚠️ Tiada laporan untuk {sel_ppd}. Debug: Total {len(reports)} laporan, PPD dalam sistem: {list(set([r.get('ppd','') for r in reports]))[:5]}")
@@ -2404,21 +2445,12 @@ with col_content:
     elif menu.startswith("📦"):
         st.markdown('<div class="card"><h3>📦 Download Pukal ZIP - PDF Berlogo</h3><p style="font-size:12px;">JPN/PPD boleh download semua laporan ikut tarikh dalam 1 ZIP file. Semua PDF ada logo LP, tulisan sampai sempadan, garis lurus, tiada jarak, 1 muka TIADA KES.</p></div>', unsafe_allow_html=True)
         
-        # FILTER IKUT PERANAN - PPD hanya daerah dia, JPN semua - FIX KASHAH: Filter ikut KOD sahaja, jangan ikut field ppd yang salah
+        # v29 STRICT PPD - PPD Klang jangan ada data campur PPD lain - FILTER STRICT BY NO PUSAT PREFIX
         if peranan_user == "PPD":
             user_ppd = user.get('ppd','')
-            user_kod = PPD_TO_KOD.get(user_ppd, '')
-            def match_ppd(r):
-                # FIX: Hanya guna kod_ppd dan no_pusat prefix, JANGAN guna ppd field (sebab data lama ppd=Klang padahal BH)
-                kod_r = str(r.get('kod_ppd','')).upper()
-                no_pusat = str(r.get('no_pusat','')).upper()
-                kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
-                # Match jika kod sama
-                if kod_r and kod_r == user_kod: return True
-                if kod_dari_pusat and kod_dari_pusat == user_kod: return True
-                return False
-            reports_for_download = [r for r in reports if match_ppd(r)]
-            st.info(f"📍 PPD {user_ppd} ({user_kod}) - hanya laporan daerah {user_ppd} sahaja - Filter kod {user_kod}")
+            allowed_kods = get_kods_for_ppd(user_ppd)
+            reports_for_download = [r for r in reports if is_report_for_ppd_strict(r, user_ppd)]
+            st.info(f"📍 PPD {user_ppd} - STRICT MODE - Kod dibenarkan: {allowed_kods} - hanya {len(reports_for_download)} laporan daerah {user_ppd} sahaja, TIADA campur PPD lain")
         else:
             reports_for_download = reports
             # Breakdown untuk JPN
@@ -2825,29 +2857,13 @@ with col_content:
             my_reports = reports
             if peranan_user == "PPD":
                 user_ppd = user["ppd"]
-                user_kod = PPD_TO_KOD.get(user_ppd,"") or user.get("kod_ppd","")
-                def match_stat(r):
-                    # v19 FIX: buang return False awal yang buat kod BK/BH tak pernah check
-                    kod_r = str(r.get("kod_ppd","") or r.get("no_pusat","")[:2]).strip().upper()
-                    no_pusat = str(r.get("no_pusat","")).upper()
-                    kod_dari_pusat = no_pusat[:2] if len(no_pusat)>=2 else ""
-                    r_ppd = str(r.get("ppd","")).strip()
-                    if user_kod and (kod_r == user_kod.upper() or kod_dari_pusat == user_kod.upper()):
-                        return True
-                    # check ppd name directly
-                    if r_ppd == user_ppd:
-                        return True
-                    if r_ppd == user_kod:
-                        return True
-                    # khas untuk Petaling Utama / Perdana
-                    if user_ppd == "Petaling Utama":
-                        if r_ppd in ["BK", "Petaling Utama"] or no_pusat.startswith("BK"):
-                            return True
-                    if user_ppd == "Petaling Perdana":
-                        if r_ppd in ["BH", "Petaling Perdana"] or no_pusat.startswith("BH"):
-                            return True
-                    return False
-                my_reports = [r for r in reports if match_stat(r)]
+                allowed_kods = get_kods_for_ppd(user_ppd)
+                # v29 STRICT STATISTIK: PPD Klang hanya kira BA, bukan BB/BC etc - ikut No Pusat prefix
+                my_reports = [r for r in reports if is_report_for_ppd_strict(r, user_ppd)]
+                if len(my_reports)==0 and len(reports)>0:
+                    from collections import Counter
+                    prefix_all = Counter([str(r.get('no_pusat',''))[:2].upper() for r in reports])
+                    st.warning(f"Debug STRICT: {len(reports)} total, 0 untuk {user_ppd} {allowed_kods}. Kod dalam sistem: {dict(prefix_all)}")
                 # Debug info if 0
                 if len(my_reports)==0 and len(reports)>0:
                     st.warning(f"Debug Statistik: {len(reports)} total laporan, tapi 0 untuk {user_ppd}. PPD dalam reports: {list(set([r.get('ppd','') for r in reports]))[:10]}, No Pusat: {list(set([str(r.get('no_pusat',''))[:2] for r in reports]))[:10]}")
