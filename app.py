@@ -2117,26 +2117,14 @@ with col_content:
             user_pusat_filter = str(user.get("no_pusat","")).strip().upper()
             user_id_filter = str(user.get("id","")).strip().upper()
             
-            # Debug info untuk Kashah
-            st.info(f"🔍 Anda login sebagai: {user_id_filter} | Pusat: {user_pusat_filter} | Nama: {user.get('nama_pusat','')}")
+            # v35 FINAL: Bersih - tak tunjuk debug info untuk user
+            # st.caption(f"Pusat: {user_pusat_filter}")
             
             if user_pusat_filter and user_pusat_filter != "-" and user_pusat_filter != "":
-                # STRICT: id_kp mesti sama DAN no_pusat mesti sama dengan pusat KP
+                # STRICT: id_kp mesti sama DAN no_pusat mesti sama dengan pusat KP - FINAL CLEAN
                 my_reports = [r for r in reports if str(r.get("id_kp","")).strip().upper()==user_id_filter and str(r.get("no_pusat","")).strip().upper()==user_pusat_filter]
-                st.success(f"🔒 LOCKED: Menunjukkan {len(my_reports)} laporan untuk {user_pusat_filter} sahaja. Pusat lain disembunyikan.")
-                
-                # Kira berapa laporan bercampur yang disembunyikan
-                mixed_reports = [r for r in reports if str(r.get("id_kp","")).strip().upper()==user_id_filter and str(r.get("no_pusat","")).strip().upper()!=user_pusat_filter]
-                if mixed_reports:
-                    st.warning(f"⚠️ {len(mixed_reports)} laporan lama dari pusat lain (contoh: {', '.join(set([r.get('no_pusat','') for r in mixed_reports][:3]))}) telah disembunyikan. Itu data lama sebelum fix.")
-                    with st.expander("Lihat laporan lama yang disembunyikan (untuk audit)"):
-                        st.dataframe([{"id": r.get("id"), "no_pusat": r.get("no_pusat"), "tarikh": r.get("tarikh")} for r in mixed_reports])
-                        if st.button("🗑️ Padam Semua Laporan Lama Bercampur (Bersihkan)"):
-                            # simpan hanya yang betul
-                            new_reports = [r for r in reports if not (str(r.get("id_kp","")).strip().upper()==user_id_filter and str(r.get("no_pusat","")).strip().upper()!=user_pusat_filter)]
-                            save_reports(new_reports)
-                            st.success("Dibersihkan! Reload...")
-                            st.rerun()
+                # v35 FINAL: Tak tunjuk LOCKED message, bersih
+                # st.caption(f"{len(my_reports)} laporan untuk {user_pusat_filter}")
             else:
                 my_reports = [r for r in reports if str(r.get("id_kp","")).strip().upper()==user_id_filter]
                 st.caption(f"Menunjukkan laporan untuk ID: {user_id_filter}")
@@ -2230,19 +2218,11 @@ with col_content:
         if not reports:
             st.warning("Belum ada laporan untuk dicetak.")
         else:
-            # Filter ikut peranan - FIX DOUBLE FILTER BUG KASHAH
+            # v35 FINAL CLEAN - tak tunjuk debug total
             available_reports = reports
-            # Debug: tunjuk total reports
-            st.caption(f"📊 Total laporan dalam sistem: {len(reports)} | PPD anda: {user['ppd']} | Login ID: {user['id']}")
             
             if peranan_user == "PPD":
-                st.info(f"📍 Anda login sebagai PPD {user['ppd']} - STRICT MODE: Hanya nampak pusat PPD {user['ppd']} sahaja, tak campur PPD lain")
-                # v29 DEBUG - tunjuk total untuk verify strict
-                if len(reports) > 0:
-                    # Kira ikut prefix sebenar
-                    from collections import Counter
-                    prefix_counts = Counter([str(r.get('no_pusat',''))[:2].upper() for r in reports])
-                    st.caption(f"📋 Total sistem {len(reports)} laporan ikut Kod: {dict(prefix_counts)} | PPD anda akan filter ikut {get_kods_for_ppd(user['ppd'])}")
+                st.info(f"📍 PPD {user['ppd']} - {len([r for r in reports if is_report_for_ppd_strict(r, user['ppd'])])} laporan daerah {user['ppd']}")
             
             elif peranan_user == "KP":
                 available_reports = [r for r in reports if r.get("id_kp")==user["id"]]
@@ -2252,8 +2232,8 @@ with col_content:
                 sel_ppd = user["ppd"]
                 kod_ppd_user = user.get("kod_ppd","")
                 allowed = get_kods_for_ppd(sel_ppd)
-                st.markdown(f"<div style='background:#EEF2FF; padding:10px; border-radius:8px; border-left:4px solid #3B82F6;'><b>📍 PPD Anda: {sel_ppd} ({kod_ppd_user}) - Kod: {allowed}</b> - STRICT: Hanya pusat {allowed} sahaja, tak campur PPD lain</div>", unsafe_allow_html=True)
-                # v29 STRICT: Filter hanya ikut No Pusat prefix, bukan field ppd yang boleh salah
+                st.markdown(f"<div style='background:#EEF2FF; padding:10px; border-radius:8px; border-left:4px solid #3B82F6;'><b>📍 PPD {sel_ppd} - {len([r for r in reports if is_report_for_ppd_strict(r, sel_ppd)])} laporan</b></div>", unsafe_allow_html=True)
+                # v35 FINAL: STRICT by No Pusat prefix
                 available_reports = [r for r in reports if is_report_for_ppd_strict(r, sel_ppd)]
                 st.caption(f"✅ {len(available_reports)} laporan untuk PPD {sel_ppd} ditemui")
                 if len(available_reports)==0 and len(reports)>0:
@@ -2478,7 +2458,7 @@ with col_content:
             user_ppd = user.get('ppd','')
             allowed_kods = get_kods_for_ppd(user_ppd)
             reports_for_download = [r for r in reports if is_report_for_ppd_strict(r, user_ppd)]
-            st.info(f"📍 PPD {user_ppd} - STRICT MODE - Kod dibenarkan: {allowed_kods} - hanya {len(reports_for_download)} laporan daerah {user_ppd} sahaja, TIADA campur PPD lain")
+            st.success(f"📍 PPD {user_ppd} - {len(reports_for_download)} laporan")
         else:
             reports_for_download = reports
             # Breakdown untuk JPN
@@ -2873,8 +2853,7 @@ with col_content:
                 # v29 STRICT STATISTIK: PPD Klang hanya kira BA, bukan BB/BC etc - ikut No Pusat prefix
                 my_reports = [r for r in reports if is_report_for_ppd_strict(r, user_ppd)]
                 if len(my_reports)==0 and len(reports)>0:
-                    # v31: tak tunjuk debug kuning dah, bersih untuk user
-                    st.info(f"Belum ada laporan untuk PPD {user_ppd}. KP daerah {user_ppd} ({', '.join(allowed_kods)}) belum hantar laporan lagi.")
+                    st.info(f"Belum ada laporan untuk PPD {user_ppd}. KP daerah {user_ppd} belum hantar lagi.")
             elif peranan_user == "KP":
                 my_reports = [r for r in reports if r.get("id_kp")==user["id"]]
         
