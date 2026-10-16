@@ -2525,7 +2525,7 @@ with col_content:
             
             # JPN: Pilihan Daerah + Tarikh + Peperiksaan (v37 - KASHAH: tak campur peperiksaan)
             if peranan_user == "ADMIN_JPN" or peranan_user == "LP":
-                st.markdown("#### 🎯 Pilih Daerah, Tarikh & Peperiksaan (JPN - Semua Daerah)")
+                st.markdown("#### 🎯 Pilih Daerah, Tarikh & Peperiksaan (JPN/LP - Semua Daerah)")
                 col_ppd, col_tarikh, col_pep = st.columns(3)
                 with col_ppd:
                     # FIX KASHAH: Dropdown JPN mesti tunjuk SEMUA DAERAH, bukan hanya Klang sahaja - ambil dari PPD_LIST penuh
