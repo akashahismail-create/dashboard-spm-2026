@@ -1,8 +1,4 @@
 streamlit
+supabase
 pandas
 openpyxl
-reportlab
-Pillow
-gspread
-google-auth
-fpdf2
