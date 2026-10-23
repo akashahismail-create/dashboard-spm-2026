@@ -279,12 +279,52 @@ PPD_MAP = {
 # Kosong  -> app JPN (semua daerah, semua kawalan negeri)
 # "BA".."BK" -> app daerah: hanya data daerah itu dimuatkan, tiada tab JPN
 PPD_KOD = _baca_konfig("PPD_KOD").upper()
+MOD_APP = _baca_konfig("MOD_APP").upper()
 MOD_DAERAH = PPD_KOD in KOD_DAERAH
 SENARAI_DAERAH_APP = [PPD_KOD] if MOD_DAERAH else KOD_DAERAH
 NAMA_DAERAH_APP = PPD_MAP.get(PPD_KOD, "") if MOD_DAERAH else ""
-if PPD_KOD and not MOD_DAERAH:
-    st.error(f"Tetapan PPD_KOD tidak sah: '{PPD_KOD}'. Gunakan salah satu daripada: {', '.join(KOD_DAERAH)}.")
+
+# Mod app mesti diisytiharkan dengan jelas. Tiada tetapan = berhenti (tidak lagi jadi app JPN secara senyap).
+_ralat_tetapan = ""
+if PPD_KOD and MOD_APP == "JPN":
+    _ralat_tetapan = "Tetapan bercanggah: PPD_KOD dan MOD_APP=JPN tidak boleh diisi serentak. Pilih salah satu."
+elif PPD_KOD and not MOD_DAERAH:
+    _ralat_tetapan = f"Tetapan PPD_KOD tidak sah: '{PPD_KOD}'. Gunakan salah satu daripada: {', '.join(KOD_DAERAH)}."
+elif not PPD_KOD and MOD_APP != "JPN":
+    _ralat_tetapan = "Tetapan app belum lengkap. Isi PPD_KOD (contoh BB) untuk app daerah, atau MOD_APP = \"JPN\" untuk app JPN."
+if _ralat_tetapan:
+    st.error(_ralat_tetapan)
     st.stop()
+
+# ===== HELPER JPN: pengesahan padam, ringkasan daerah, cadangan ikut daerah =====
+def minta_sahkan_padam(kunci, jadual):
+    """Paparkan amaran + kotak taip PADAM. Pulangkan True hanya jika pengguna taip PADAM."""
+    st.warning(f"⚠️ Tindakan ini memadam SEMUA data **{jadual}** untuk SEMUA daerah sebelum data baru dimasukkan. "
+               f"Semua app daerah akan terjejas seketika. Simpan salinan Excel dahulu. Taip **PADAM** untuk membuka butang.")
+    return st.text_input("Taip PADAM untuk sahkan", key=kunci).strip().upper() == "PADAM"
+
+@st.cache_data(ttl=300, show_spinner="Mengira ringkasan setiap daerah...")
+def ringkasan_ppd():
+    """Kiraan Sekolah/Guru/Cadangan setiap PPD - dijalankan selari dan dicache 5 minit."""
+    from concurrent.futures import ThreadPoolExecutor
+    def kira(ppd):
+        try:
+            c1 = supa.table("sekolah_master").select("kod_sekolah", count="exact").eq("kod_ppd", ppd).limit(1).execute()
+            c2 = supa.table("guru_master").select("id", count="exact").eq("kod_ppd", ppd.lower()).limit(1).execute()
+            c3 = supa.table("cadangan_sup").select("id", count="exact").eq("kod_ppd", ppd).limit(1).execute()
+            return {"PPD": f"{ppd} - {PPD_MAP[ppd]}", "Sekolah": c1.count or 0, "Guru": c2.count or 0, "Cadangan": c3.count or 0}
+        except Exception:
+            return {"PPD": f"{ppd} - {PPD_MAP.get(ppd, '')}", "Sekolah": 0, "Guru": 0, "Cadangan": 0}
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        return list(ex.map(kira, KOD_DAERAH))
+
+@st.cache_data(ttl=120, show_spinner="Memuatkan cadangan...")
+def ambil_cadangan_mentah(ppd=""):
+    q = supa.table("cadangan_sup").select("*")
+    if ppd:
+        q = q.ilike("kod_ppd", ppd)
+    res = q.limit(10000).execute()
+    return pd.DataFrame(res.data or [])
 
 # ===== PANDUAN PASSWORD (dimatikan - jangan paparkan password di skrin login) =====
 ENABLE_TESTING_GUIDE = False
@@ -7450,16 +7490,9 @@ elif st.session_state.role == "JPN":
             
             st.markdown("---")
             st.subheader("Breakdown Ikut PPD")
-            rows = []
-            for ppd in KOD_DAERAH:
-                try:
-                    c1 = supa.table("sekolah_master").select("kod_sekolah", count="exact").eq("kod_ppd", ppd).execute()
-                    c2 = supa.table("guru_master").select("id", count="exact").eq("kod_ppd", ppd.lower()).execute()
-                    c3 = supa.table("cadangan_sup").select("id", count="exact").eq("kod_ppd", ppd).execute()
-                    rows.append({"PPD": f"{ppd} - {PPD_MAP[ppd]}", "Sekolah": c1.count, "Guru": c2.count, "Cadangan": c3.count})
-                except:
-                    rows.append({"PPD": ppd, "Sekolah": 0, "Guru": 0, "Cadangan": 0})
+            rows = ringkasan_ppd()
             st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+            st.caption("Dikira selari dan dicache 5 minit. Tekan REFRESH untuk kira semula.")
         elif menu == "jpn_template_surat":
             st.header("📄 Template Surat JPN - 11 Jawatan (LAJU)")
             st.caption("JPN selaraskan - PPD auto guna template ini")
@@ -7539,7 +7572,8 @@ elif st.session_state.role == "JPN":
                         df_up = pd.read_excel(up_sek)
                     st.write(f"Preview {len(df_up)} sekolah:")
                     st.dataframe(df_up.head(30), use_container_width=True)
-                    if st.button(f"🚀 Import {len(df_up)} Sekolah ke Supabase", type="primary", use_container_width=True):
+                    _ok_imp_sek = minta_sahkan_padam("sahkan_import_sek", "sekolah_master")
+                    if st.button(f"🚀 Import {len(df_up)} Sekolah ke Supabase", type="primary", use_container_width=True, disabled=not _ok_imp_sek):
                         bar = st.progress(0)
                         stat = st.empty()
                         ok = 0
@@ -7576,7 +7610,8 @@ elif st.session_state.role == "JPN":
             
             st.markdown("---")
             st.subheader("Auto Generate Sekolah dari Pusat 506")
-            if st.button("⚡ Generate Sekolah Master dari pusat_master yang sedia ada (506 pusat)", use_container_width=True):
+            _ok_gen_sek = minta_sahkan_padam("sahkan_gen_sek", "sekolah_master")
+            if st.button("⚡ Generate Sekolah Master dari pusat_master yang sedia ada (506 pusat)", use_container_width=True, disabled=not _ok_gen_sek):
                 try:
                     res = supa.table("pusat_master").select("*").limit(1000).execute()
                     df_p = pd.DataFrame(res.data or [])
@@ -7803,7 +7838,8 @@ ALTER TABLE pusat_master ADD COLUMN IF NOT EXISTS nama_pusat TEXT;
                         st.error("Maaf, berlaku masalah semasa memproses. Sila cuba lagi.")
             
             st.markdown("---")
-            if st.button("🗑️ Kosongkan Semua Pusat (Hati-hati!)", type="secondary"):
+            _ok_kosong_pusat = minta_sahkan_padam("sahkan_kosong_pusat", "pusat_master")
+            if st.button("🗑️ Kosongkan Semua Pusat (Hati-hati!)", type="secondary", disabled=not _ok_kosong_pusat):
                 try:
                     supa.table("pusat_master").delete().gt("id", 0).execute()
                     st.success("Semua pusat dipadam")
@@ -7880,16 +7916,31 @@ ALTER TABLE pusat_master ADD COLUMN IF NOT EXISTS nama_pusat TEXT;
                 st.error(str(e))
 
         elif menu == "cadangan":
-            st.header("Semua Cadangan Seluruh Negeri")
-            try:
-                res = supa.table("cadangan_sup").select("*").limit(10000).execute()
-                df = pd.DataFrame(res.data or [])
-                st.dataframe(df, use_container_width=True)
-                if not df.empty:
-                    st.download_button("Export Semua Cadangan", to_excel(df), file_name=f"cadangan_negeri_{datetime.date.today()}.xlsx")
-            except Exception as e:
-                st.error(str(e))
-
+            st.header("Cadangan Seluruh Negeri")
+            _pil = st.selectbox("Pilih Daerah (PPD)", ["-- Pilih daerah --"] + [f"{k} - {PPD_MAP[k]}" for k in KOD_DAERAH] + ["SEMUA DAERAH (berat)"], key="jpn_cad_ppd")
+            if _pil == "-- Pilih daerah --":
+                st.info("Pilih satu daerah untuk melihat cadangan. Ini mengelakkan sistem menarik semua data negeri sekali gus.")
+            else:
+                _semua = _pil.startswith("SEMUA")
+                _teruskan = True
+                if _semua:
+                    _teruskan = st.checkbox("Saya faham ini memuatkan semua cadangan negeri dan mungkin lambat", key="jpn_cad_semua_ok")
+                if _teruskan:
+                    try:
+                        _kod = "" if _semua else _pil.split(" - ")[0]
+                        df = ambil_cadangan_mentah(_kod)
+                        st.caption(f"{len(df)} cadangan" + ("" if _semua else f" - PPD {_pil}"))
+                        st.dataframe(df.head(1000), use_container_width=True)
+                        if len(df) > 1000:
+                            st.caption("Paparan menunjukkan 1,000 baris pertama. Fail Excel mengandungi semua baris.")
+                        if not df.empty:
+                            _kunci_x = f"jpn_cad_xlsx_{_kod or 'SEMUA'}"
+                            if st.button("📦 Sediakan Fail Excel", key=f"btn_{_kunci_x}"):
+                                st.session_state[_kunci_x] = to_excel(df)
+                            if st.session_state.get(_kunci_x):
+                                st.download_button("📥 Muat Turun Excel", st.session_state[_kunci_x], file_name=f"cadangan_{_kod or 'negeri'}_{datetime.date.today()}.xlsx", key=f"dl_{_kunci_x}")
+                    except Exception:
+                        st.error("Maaf, cadangan tidak dapat dimuatkan. Sila cuba lagi.")
 
         elif menu == "jana_surat":
             st.markdown(f"""
@@ -8167,13 +8218,20 @@ ALTER TABLE pusat_master ADD COLUMN IF NOT EXISTS nama_pusat TEXT;
 
         elif menu == "export":
             st.header("Export Laporan Negeri")
-            try:
-                res = supa.table("cadangan_sup").select("*").limit(10000).execute()
-                df = pd.DataFrame(res.data or [])
-                if not df.empty:
-                    st.download_button("📥 Laporan Penuh Negeri (Excel)", to_excel(df), file_name=f"Laporan_JPN_Selangor_{datetime.date.today()}.xlsx", use_container_width=True, type="primary")
-            except Exception as e:
-                st.error(str(e))
+            _pil_e = st.selectbox("Skop laporan", ["SEMUA NEGERI"] + [f"{k} - {PPD_MAP[k]}" for k in KOD_DAERAH], key="jpn_exp_ppd")
+            _kod_e = "" if _pil_e == "SEMUA NEGERI" else _pil_e.split(" - ")[0]
+            _kunci_e = f"jpn_exp_bytes_{_kod_e or 'SEMUA'}"
+            if st.button("📦 Sediakan Laporan", type="primary", use_container_width=True, key="btn_sedia_laporan"):
+                try:
+                    _df_e = ambil_cadangan_mentah(_kod_e)
+                    if _df_e.empty:
+                        st.warning("Tiada data untuk skop ini.")
+                    else:
+                        st.session_state[_kunci_e] = to_excel(_df_e)
+                except Exception:
+                    st.error("Maaf, laporan tidak dapat disediakan. Sila cuba lagi.")
+            if st.session_state.get(_kunci_e):
+                st.download_button("📥 Muat Turun Laporan (Excel)", st.session_state[_kunci_e], file_name=f"Laporan_JPN_{_kod_e or 'Selangor'}_{datetime.date.today()}.xlsx", use_container_width=True, key="dl_laporan")
 
         elif menu == "admin":
             st.header("⚙️ Status Sistem & Sambungan Pangkalan Data")
@@ -8207,4 +8265,3 @@ CREATE POLICY "allow all" ON cadangan_sup FOR ALL USING (true) WITH CHECK (true)
 
 # ================= FOOTER =================
 st.markdown("<div class='app-footer'>Sistem Pelantikan Petugas SPM Selangor 2026 · Jabatan Pendidikan Negeri Selangor</div>", unsafe_allow_html=True)
-
