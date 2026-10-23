@@ -254,7 +254,93 @@ def generate_surat_html(nama, ic, jawatan, sek_asal, nama_sek_asal, pusat, nama_
     html += '</body></html>'
     return html
 
+def generate_surat_penyelia_kawasan_html(nama, ic, sek_asal, nama_sek_asal, telefon, kod_bilik_kebal, nama_bilik_kebal, alamat_bilik_kebal, pusat_jagaan_list, no_surat, kod_ppd, ppd_name, tarikh):
+    """Surat khas untuk Penyelia Kawasan yang ditempatkan ke Bilik Kebal"""
+    # V34: Ensure pusat_jagaan_list is not empty, fallback to kod_pusat if needed
+    if not pusat_jagaan_list:
+        try:
+            # Try from data JSON
+            if isinstance(data_dict, dict):
+                pusat_jagaan_list = data_dict.get("pusat_jagaan") or data_dict.get("pusat_jagaan_str","").split(",") if isinstance(data_dict.get("pusat_jagaan_str"), str) else []
+        except:
+            pass
+    pusat_jagaan_str = ", ".join(pusat_jagaan_list) if isinstance(pusat_jagaan_list, list) else str(pusat_jagaan_list)
+    pusat_jagaan_table = ""
+    if isinstance(pusat_jagaan_list, list) and pusat_jagaan_list:
+        for idx, p in enumerate(pusat_jagaan_list, 1):
+            pusat_jagaan_table += f"<tr><td>{idx}</td><td>{p}</td></tr>"
+    else:
+        pusat_jagaan_table = f"<tr><td>1</td><td>{pusat_jagaan_str}</td></tr>"
+    
+    html = '<html><head><meta charset="UTF-8"><title>Surat Lantikan Penyelia Kawasan SPM 2026</title>'
+    html += '<style>body{font-family:Times New Roman,serif;margin:40px;color:#000;}'
+    html += '.surat{border:3px double #0d47a1;padding:30px;margin-bottom:30px;background:white;page-break-after:always;}'
+    html += '.header{text-align:center;border-bottom:3px double #0d47a1;padding-bottom:15px;margin-bottom:20px;}'
+    html += '.header h2{color:#0d47a1;margin:5px 0;}'
+    html += '.kandungan{line-height:1.7;font-size:14px;}'
+    html += 'table.info{width:100%;border-collapse:collapse;margin:15px 0;}'
+    html += 'table.info td{padding:8px 12px;border:1px solid #ddd;}'
+    html += 'table.info td:first-child{width:200px;font-weight:bold;background:#e3f2fd;}'
+    html += 'table.pusat{width:100%;border-collapse:collapse;margin:10px 0;}'
+    html += 'table.pusat th, table.pusat td{border:1px solid #0d47a1;padding:8px;text-align:left;}'
+    html += 'table.pusat th{background:#0d47a1;color:white;}'
+    html += '.tandatangan{margin-top:60px;display:flex;justify-content:space-between;}'
+    html += '.penting{background:#fff3e0;border-left:5px solid #e65100;padding:12px;margin:15px 0;}'
+    html += '</style></head><body>'
+    html += '<div class="surat"><div class="header">'
+    html += '<h2>JABATAN PENDIDIKAN NEGERI SELANGOR</h2>'
+    html += f'<h3>PEJABAT PENDIDIKAN DAERAH {kod_ppd} - {ppd_name}</h3>'
+    html += '<h3 style="color:#e65100;">SURAT LANTIKAN PENYELIA KAWASAN SPM 2026</h3>'
+    html += f'<p><strong>No Rujukan: {no_surat}</strong> | Tarikh: {tarikh}</p></div>'
+    html += '<div class="kandungan">'
+    html += '<p><strong>Tuan/Puan,</strong></p>'
+    html += '<p><strong>PELANTIKAN SEBAGAI PENYELIA KAWASAN PEPERIKSAAN SPM TAHUN 2026 - PENEMPATAN DI BILIK KEBAL</strong></p>'
+    html += '<p>Dengan hormatnya saya merujuk kepada perkara di atas dan sukacita dimaklumkan bahawa tuan/puan telah dilantik sebagai <strong>Penyelia Kawasan SPM 2026</strong> dengan butiran seperti berikut:</p>'
+    html += '<table class="info">'
+    html += f'<tr><td>Nama Penyelia Kawasan</td><td>{nama}</td></tr>'
+    html += f'<tr><td>No. Kad Pengenalan</td><td>{ic}</td></tr>'
+    html += f'<tr><td>Sekolah Asal</td><td>{sek_asal} - {nama_sek_asal}</td></tr>'
+    html += f'<tr><td>No. Telefon</td><td>{telefon}</td></tr>'
+    html += f'<tr><td>Jawatan Lantikan</td><td><strong>PENYELIA KAWASAN</strong></td></tr>'
+    html += f'<tr><td>Dilantik di Bilik Kebal</td><td><strong>{kod_bilik_kebal} - {nama_bilik_kebal}</strong><br><small>{alamat_bilik_kebal}</small></td></tr>'
+    html += f'<tr><td>No Surat Lantikan</td><td>{no_surat}</td></tr>'
+    html += f'<tr><td>PPD</td><td>{kod_ppd} - {ppd_name}</td></tr>'
+    html += '</table>'
+    
+    html += '<div class="penting">'
+    html += '<strong>BERTANGGUNGJAWAB ATAS PUSAT-PUSAT PEPERIKSAAN:</strong>'
+    html += '<p>Penyelia Kawasan ini bertanggungjawab memantau dan menyelia pusat-pusat peperiksaan berikut di bawah Bilik Kebal yang berkenaan:</p>'
+    html += '</div>'
+    
+    html += '<table class="pusat">'
+    html += '<tr><th>Bil</th><th>Kod Pusat / Pusat Peperiksaan Di Bawah Jagaan</th></tr>'
+    html += pusat_jagaan_table
+    html += '</table>'
+    
+    html += f'<p><strong>Jumlah Pusat Jagaan: {len(pusat_jagaan_list) if isinstance(pusat_jagaan_list, list) else 1} pusat</strong></p>'
+    
+    html += '<p>3. <strong>Tugas dan Tanggungjawab Penyelia Kawasan:</strong></p>'
+    html += '<ul>'
+    html += '<li>Bertanggungjawab sepenuhnya ke atas keselamatan dan kelancaran pengurusan kertas soalan di Bilik Kebal yang ditetapkan;</li>'
+    html += f'<li>Menyelia dan memantau {len(pusat_jagaan_list) if isinstance(pusat_jagaan_list, list) else 1} pusat peperiksaan di bawah jagaan Bilik Kebal {kod_bilik_kebal};</li>'
+    html += '<li>Memastikan semua prosedur keselamatan dan tatacara peperiksaan SPM dipatuhi;</li>'
+    html += '<li>Melaporkan sebarang isu atau masalah kepada Pegawai Pendidikan Daerah dengan segera;</li>'
+    html += '<li>Hadir bertugas mengikut jadual yang ditetapkan oleh PPD.</li>'
+    html += '</ul>'
+    
+    html += '<p>4. Tuan/puan dikehendaki hadir taklimat Penyelia Kawasan yang akan dimaklumkan kemudian oleh PPD.</p>'
+    html += '<p>5. Kerjasama, komitmen dan integriti tuan/puan dalam menjayakan peperiksaan SPM 2026 amatlah dihargai.</p>'
+    html += '<p>Sekian, terima kasih.</p>'
+    
+    html += '<div class="footer"><p><strong>MALAYSIA MADANI</strong><br><strong>BERKHIDMAT UNTUK NEGARA</strong></p>'
+    html += '<div class="tandatangan"><div><p>Yang benar,</p><br><br><br>'
+    html += f'<p>_________________________<br><strong>Pegawai Pendidikan Daerah<br>PPD {kod_ppd} - {ppd_name}</strong><br><small>Tarikh: {tarikh}</small></p></div>'
+    html += '<div style="text-align:right;"><p>b.p Pengarah Pendidikan<br>Jabatan Pendidikan Negeri Selangor<br><br><small>Salinan: Pengetua {nama_sek_asal}<br>Sekolah Asal Penyelia Kawasan</small></p></div></div></div></div></div>'
+    html += '</body></html>'
+    return html
+
 def generate_surat_kolektif_html(guru_list, kod_ppd, ppd_name, tarikh, prefix):
+
     # guru_list is list of dicts with NAMA, IC, etc
     html = '<html><head><meta charset="UTF-8"><title>Surat Lantikan Kolektif</title>'
     html += '<style>body{font-family:Arial,sans-serif;margin:20px;} .surat{border:1px solid #ccc;padding:20px;margin:10px 0;} h2{text-align:center;}</style></head><body>'
@@ -403,26 +489,20 @@ def get_pusat_df():
 @st.cache_data(ttl=120, show_spinner=False)
 def get_cadangan_df(kod_ppd=None, kod_sekolah=None):
     try:
+        # Fetch with larger limit and without strict eq first to avoid missing data due to case issues
         try:
-            if kod_sekolah:
-                res = supa.table("cadangan_sup").select("*").eq("kod_sekolah", kod_sekolah.upper()).limit(5000).execute()
-                if not res.data: res = supa.table("cadangan_sup").select("*").eq("kod_sekolah_asal", kod_sekolah.upper()).limit(5000).execute()
-                if not res.data: res = supa.table("cadangan_sup").select("*").limit(5000).execute()
-            elif kod_ppd:
-                res = supa.table("cadangan_sup").select("*").eq("kod_ppd", kod_ppd.upper()).limit(5000).execute()
-                if not res.data: res = supa.table("cadangan_sup").select("*").limit(5000).execute()
-            else:
-                res = supa.table("cadangan_sup").select("*").limit(5000).execute()
+            # Always fetch all then filter locally for robustness
+            res = supa.table("cadangan_sup").select("*").limit(10000).execute()
         except:
             res = supa.table("cadangan_sup").select("*").limit(5000).execute()
         
         df = pd.DataFrame(res.data or [])
-        if df.empty: return df
+        if df.empty:
+            return df
         
-        # Normalization logic simplified for brevity but keeping functionality
+        # Normalize - merge data json and top-level columns
         norm_rows = []
         for _, r in df.iterrows():
-            # Basic extraction
             row_dict = {}
             for k, v in r.items():
                 if k != 'data':
@@ -431,29 +511,136 @@ def get_cadangan_df(kod_ppd=None, kod_sekolah=None):
                     if isinstance(v, dict):
                         row_dict.update(v)
                     elif isinstance(v, str):
-                        try: row_dict.update(json.loads(v))
-                        except: pass
+                        try:
+                            parsed = json.loads(v)
+                            if isinstance(parsed, dict):
+                                row_dict.update(parsed)
+                        except:
+                            pass
+            # Normalize keys to upper for consistency but keep original too
+            # Ensure critical fields
+            # JAWATAN - normalize various possible keys
+            jaw = row_dict.get('JAWATAN_CADANGAN') or row_dict.get('jawatan_cadangan') or row_dict.get('JAWATAN') or row_dict.get('jawatan') or row_dict.get('JAWATAN CADANGAN') or ''
+            jaw = str(jaw).strip()
+            # Clean jawatan: remove extra spaces, normalize case for comparison but keep original display
+            jaw_clean = ' '.join(jaw.split())
+            row_dict['JAWATAN_CADANGAN'] = jaw_clean
+            row_dict['jawatan_cadangan'] = jaw_clean
+            row_dict['JAWATAN_CADANGAN_NORM'] = jaw_clean.lower()
             
-            # Ensure critical fields exist
-            if 'STATUS' not in row_dict: row_dict['STATUS'] = 'DICADANGKAN'
-            if 'KOD_PPD' not in row_dict: row_dict['KOD_PPD'] = row_dict.get('kod_ppd', '')
+            # KOD PPD
+            kppd = row_dict.get('KOD_PPD') or row_dict.get('kod_ppd') or row_dict.get('KOD_PPD_ASAL') or row_dict.get('kod_ppd_asal') or ''
+            row_dict['KOD_PPD'] = str(kppd).strip().upper()
+            
+            # KOD SEKOLAH ASAL
+            ksa = row_dict.get('KOD_SEKOLAH_ASAL') or row_dict.get('kod_sekolah_asal') or row_dict.get('KOD_SEKOLAH') or row_dict.get('kod_sekolah') or row_dict.get('kod_sekolah_tuan_rumah') or ''
+            row_dict['KOD_SEKOLAH_ASAL'] = str(ksa).strip().upper()
+            
+            # NAMA
+            ng = row_dict.get('NAMA_GURU') or row_dict.get('nama_guru') or row_dict.get('NAMA GURU') or ''
+            row_dict['NAMA_GURU'] = str(ng).strip().upper()
+            
+            # NAMA SEKOLAH ASAL - V28 FIX
+            nsa = row_dict.get('NAMA_SEKOLAH_ASAL') or row_dict.get('nama_sekolah_asal') or row_dict.get('NAMA_SEKOLAH') or row_dict.get('nama_sekolah') or row_dict.get('NAMA SEKOLAH ASAL') or ''
+            row_dict['NAMA_SEKOLAH_ASAL'] = str(nsa).strip().upper()
+            row_dict['nama_sekolah_asal'] = str(nsa).strip()
+            
+            # IC
+            ic = row_dict.get('IC_GURU') or row_dict.get('ic_guru') or row_dict.get('IC') or row_dict.get('ic') or ''
+            ic = str(ic).strip()
+            # Normalize IC - remove spaces
+            ic = ic.replace(' ', '')
+            row_dict['IC_GURU'] = ic
+            
+            # ALAMAT, TELEFON, EMAIL, POSKOD - ensure exists
+            for key_lower, key_upper in [('alamat_rumah','ALAMAT_RUMAH'), ('telefon_guru','TELEFON_GURU'), ('email_guru','EMAIL_GURU'), ('poskod_rumah','POSKOD_RUMAH'), ('no_pusat_asal','NO_PUSAT_ASAL'), ('pengalaman_spm','PENGALAMAN_SPM')]:
+                val = row_dict.get(key_upper) or row_dict.get(key_lower) or ''
+                row_dict[key_upper] = str(val).strip()
+                row_dict[key_lower] = str(val).strip()
+            
+            if 'STATUS' not in row_dict or not row_dict['STATUS']:
+                row_dict['STATUS'] = row_dict.get('status') or 'DICADANGKAN'
             
             norm_rows.append(row_dict)
-            
-        df_norm = pd.DataFrame(norm_rows)
         
-        if kod_ppd:
-            try: df_norm = df_norm[df_norm["KOD_PPD"].str.upper() == kod_ppd.upper()]
-            except: pass
-        if kod_sekolah:
+        df_norm = pd.DataFrame(norm_rows)
+        if df_norm.empty:
+            return df_norm
+        
+        # V25 FIX: Deduplicate and keep HANTAR status prioritized over DICADANGKAN
+        if 'IC_GURU' in df_norm.columns:
+            # Create priority for status: LULUS=3, HANTAR=2, DICADANGKAN=1
+            def status_priority(s):
+                s = str(s).upper()
+                if 'LULUS' in s:
+                    return 3
+                if 'HANTAR' in s:
+                    return 2
+                return 1
             try:
-                if "KOD_SEKOLAH_ASAL" in df_norm.columns:
-                    df_norm = df_norm[df_norm["KOD_SEKOLAH_ASAL"].str.upper() == kod_sekolah.upper()]
-                elif "KOD_SEKOLAH" in df_norm.columns:
-                    df_norm = df_norm[df_norm["KOD_SEKOLAH"].str.upper() == kod_sekolah.upper()]
-            except: pass
+                df_norm['status_prio'] = df_norm['STATUS'].apply(status_priority)
+            except:
+                try:
+                    df_norm['status_prio'] = df_norm['status'].apply(status_priority)
+                except:
+                    df_norm['status_prio'] = 1
+            
+            # Add sort key: id descending, status_prio descending
+            sort_cols = ['status_prio']
+            if 'id' in df_norm.columns:
+                try:
+                    df_norm['id_num'] = pd.to_numeric(df_norm['id'], errors='coerce')
+                    sort_cols.append('id_num')
+                except:
+                    pass
+            if 'created_at' in df_norm.columns:
+                sort_cols.append('created_at')
+            
+            df_norm = df_norm.sort_values(by=sort_cols, ascending=False)
+            df_norm = df_norm.drop_duplicates(subset=['IC_GURU', 'KOD_SEKOLAH_ASAL'], keep='first')
+            # Clean helper columns
+            for col in ['id_num', 'status_prio']:
+                if col in df_norm.columns:
+                    df_norm = df_norm.drop(columns=[col])
+        
+        # Filter by PPD if requested - robust case-insensitive contains
+        if kod_ppd:
+            kod_ppd_u = kod_ppd.strip().upper()
+            try:
+                # Filter where KOD_PPD matches or is empty (include if no PPD info but school code belongs to PPD via sekolah_master)
+                mask = df_norm['KOD_PPD'].astype(str).str.upper().str.contains(kod_ppd_u, na=False)
+                # Also include if KOD_SEKOLAH_ASAL starts with something? But for BA, all BA schools have KOD_PPD BA - try also fetch sekolah list
+                # If mask gives zero, try not filtering strictly and let all pass, then later filter via sekolah_master mapping
+                if mask.sum() > 0:
+                    df_norm = df_norm[mask | (df_norm['KOD_PPD'] == '') | (df_norm['KOD_PPD'].isna())]
+                # If still, try to get sekolah codes for this PPD and filter by those
+                try:
+                    res_sek = supa.table("sekolah_master").select("kod_sekolah").eq("kod_ppd", kod_ppd_u).limit(2000).execute()
+                    kod_list = [str(s.get('kod_sekolah','')).upper() for s in (res_sek.data or [])]
+                    if kod_list:
+                        mask2 = df_norm['KOD_SEKOLAH_ASAL'].isin(kod_list)
+                        if mask2.sum() > 0:
+                            # Combine both masks
+                            df_norm = df_norm[mask | mask2]
+                except:
+                    pass
+            except Exception as e:
+                pass
+        
+        if kod_sekolah:
+            kod_s_u = kod_sekolah.strip().upper()
+            try:
+                df_norm = df_norm[df_norm['KOD_SEKOLAH_ASAL'].astype(str).str.upper() == kod_s_u]
+            except:
+                pass
+        
         return df_norm
-    except Exception:
+    except Exception as e:
+        # Return empty but log
+        try:
+            print(f"get_cadangan_df error: {e}")
+        except:
+            pass
         return pd.DataFrame()
 
 def flash(level, msg):
@@ -468,19 +655,62 @@ def _id_py(x):
     if isinstance(x, float) and x.is_integer(): return int(x)
     return x
 
-def hantar_ke_ppd(ids, kod_ppd):
+def hantar_ke_ppd(ids, kod_ppd, df_sasaran=None):
+    """V25 FIX: Update by IC + sekolah to ensure all duplicate rows become HANTAR, not just by id"""
     berjaya, gagal = 0, []
+    # If df_sasaran provided, also get IC list to update all duplicates
+    ic_list = []
+    sekolah_list = []
+    if df_sasaran is not None and not df_sasaran.empty:
+        try:
+            if 'IC_GURU' in df_sasaran.columns:
+                ic_list = df_sasaran['IC_GURU'].astype(str).str.strip().tolist()
+            if 'KOD_SEKOLAH_ASAL' in df_sasaran.columns:
+                sekolah_list = df_sasaran['KOD_SEKOLAH_ASAL'].astype(str).str.strip().str.upper().tolist()
+        except:
+            pass
+    
+    # First, update by id (original)
     for i in range(0, len(ids), 100):
         kelompok = ids[i:i + 100]
-        try:
-            supa.table("cadangan_sup").update({"status": "HANTAR KE PPD", "kod_ppd": kod_ppd}).in_("id", kelompok).execute()
-        except Exception:
+        payloads_to_try = [
+            {"status": "HANTAR KE PPD", "STATUS": "HANTAR KE PPD", "kod_ppd": kod_ppd, "KOD_PPD": kod_ppd},
+            {"status": "HANTAR KE PPD", "STATUS": "HANTAR KE PPD"},
+            {"status": "HANTAR KE PPD", "kod_ppd": kod_ppd},
+            {"STATUS": "HANTAR KE PPD", "KOD_PPD": kod_ppd},
+        ]
+        success = False
+        last_err = ""
+        for payload in payloads_to_try:
             try:
-                supa.table("cadangan_sup").update({"status": "HANTAR KE PPD"}).in_("id", kelompok).execute()
+                supa.table("cadangan_sup").update(payload).in_("id", kelompok).execute()
+                success = True
+                break
             except Exception as e:
-                gagal.append(f"{e}")
+                last_err = str(e)
                 continue
-        berjaya += len(kelompok)
+        if success:
+            berjaya += len(kelompok)
+        else:
+            gagal.append(last_err)
+    
+    # Second, ensure all rows with same IC + sekolah also updated to HANTAR (to fix duplicate bug)
+    # This ensures even if there are 2 rows id 19 and 140 with same IC, both become HANTAR
+    if ic_list:
+        for ic_val, sek_val in zip(ic_list, sekolah_list):
+            try:
+                # Update all rows with same IC
+                supa.table("cadangan_sup").update({"status": "HANTAR KE PPD", "STATUS": "HANTAR KE PPD"}).eq("ic_guru", ic_val).execute()
+            except:
+                try:
+                    supa.table("cadangan_sup").update({"status": "HANTAR KE PPD"}).eq("ic_guru", ic_val).execute()
+                except:
+                    pass
+            try:
+                supa.table("cadangan_sup").update({"STATUS": "HANTAR KE PPD"}).eq("IC_GURU", ic_val).execute()
+            except:
+                pass
+    
     return berjaya, gagal
 
 def simpan_penempatan_ppd(items):
@@ -856,17 +1086,82 @@ if st.session_state.role == "SUP":
                 st.info("guru_master kosong untuk sekolah ini. Sila Tambah Guru atau Import Excel.")
             else:
                 st.success(f"Ada {len(df_guru)} guru di {kod}")
-                cols_to_show = [c for c in ["NAMA GURU", "IC", "JANTINA", "POSKOD_RUMAH", "ALAMAT_RUMAH", "TELEFON_GURU", "EMAIL_GURU", "JAWATAN CADANGAN", "PENGALAMAN_SPM", "KOD_SEKOLAH_ASAL", "NAMA_SEKOLAH_ASAL", "NO_PUSAT_ASAL"] if c in df_guru.columns]
+                
+                # ===== FILTER IKUT JAWATAN - SUP SENARAI GURU (BARU) =====
+                st.markdown("### 🔍 Filter Ikut Jawatan - Senarai Guru")
+                jawatan_sup_list = []
+                col_jawatan_sup = "JAWATAN CADANGAN" if "JAWATAN CADANGAN" in df_guru.columns else "JAWATAN_CADANGAN" if "JAWATAN_CADANGAN" in df_guru.columns else None
+                if col_jawatan_sup:
+                    for _, r in df_guru.iterrows():
+                        j = str(r.get(col_jawatan_sup, "")).strip()
+                        if j and j not in jawatan_sup_list:
+                            jawatan_sup_list.append(j)
+                order_j = ["Ketua Pengawas", "Timbalan Ketua Pengawas", "Penyelia Kawasan", "Pengawas Peperiksaan"]
+                jawatan_sup_sorted = sorted(jawatan_sup_list, key=lambda x: (order_j.index(x) if x in order_j else 99, x))
+                
+                if "filter_jawatan_sup_senarai" not in st.session_state:
+                    st.session_state["filter_jawatan_sup_senarai"] = []
+                
+                col_f1_sup, col_f2_sup, col_f3_sup, col_f4_sup = st.columns([2,1,1,1])
+                with col_f1_sup:
+                    safe_default_sup = [x for x in st.session_state["filter_jawatan_sup_senarai"] if x in jawatan_sup_sorted]
+                    if not jawatan_sup_sorted:
+                        jawatan_sup_sorted = ["Ketua Pengawas", "Timbalan Ketua Pengawas", "Penyelia Kawasan", "Pengawas Peperiksaan"]
+                        safe_default_sup = st.session_state["filter_jawatan_sup_senarai"]
+                    if st.session_state["filter_jawatan_sup_senarai"] and not safe_default_sup:
+                        for v in st.session_state["filter_jawatan_sup_senarai"]:
+                            if v not in jawatan_sup_sorted:
+                                jawatan_sup_sorted.append(v)
+                        safe_default_sup = st.session_state["filter_jawatan_sup_senarai"]
+                    filter_jawatan_sup = st.multiselect("Filter Jawatan", jawatan_sup_sorted, default=safe_default_sup, placeholder="Kosong = semua jawatan")
+                    if filter_jawatan_sup != st.session_state["filter_jawatan_sup_senarai"]:
+                        st.session_state["filter_jawatan_sup_senarai"] = filter_jawatan_sup
+                with col_f2_sup:
+                    current_sup_filter = filter_jawatan_sup if filter_jawatan_sup else st.session_state.get("filter_jawatan_sup_senarai", [])
+                    if current_sup_filter:
+                        filtered_count = len(df_guru[df_guru[col_jawatan_sup].astype(str).str.strip().isin(current_sup_filter)]) if col_jawatan_sup else 0
+                        st.metric(f"Filter: {len(current_sup_filter)}", f"{filtered_count} guru")
+                    else:
+                        st.metric("Semua", f"{len(df_guru)} guru")
+                with col_f3_sup:
+                    if st.button("🔐 Hanya Penyelia", use_container_width=True, key="btn_filter_pk_sup"):
+                        st.session_state["filter_jawatan_sup_senarai"] = ["Penyelia Kawasan"]
+                        st.rerun()
+                with col_f4_sup:
+                    if st.button("🔄 Clear", use_container_width=True, key="btn_clear_sup"):
+                        st.session_state["filter_jawatan_sup_senarai"] = []
+                        st.rerun()
+                
+                current_sup_filter2 = st.session_state.get("filter_jawatan_sup_senarai", [])
+                df_guru_filtered = df_guru
+                if current_sup_filter2 and col_jawatan_sup:
+                    df_guru_filtered = df_guru[df_guru[col_jawatan_sup].astype(str).str.strip().isin(current_sup_filter2)].copy()
+                    st.success(f"✅ Filter: {', '.join(current_sup_filter2)} - {len(df_guru_filtered)} guru")
+                
+                # Pecahan ikut jawatan
+                if not df_guru_filtered.empty and col_jawatan_sup:
+                    j_counts = df_guru_filtered[col_jawatan_sup].value_counts().to_dict()
+                    if j_counts:
+                        st.markdown("#### 📊 Pecahan Ikut Jawatan")
+                        cols_j_sup = st.columns(len(j_counts))
+                        for idx, (j, cnt) in enumerate(sorted(j_counts.items(), key=lambda x: (order_j.index(x[0]) if x[0] in order_j else 99, x[0]))):
+                            with cols_j_sup[idx % len(cols_j_sup)]:
+                                icon = "👑" if "Ketua Pengawas" in j and "Timbalan" not in j else "🎖️" if "Timbalan" in j else "🔐" if "Penyelia" in j else "👨‍🏫"
+                                st.metric(f"{icon} {j}", cnt)
+                
+                cols_to_show = [c for c in ["NAMA GURU", "IC", "JANTINA", "POSKOD_RUMAH", "ALAMAT_RUMAH", "TELEFON_GURU", "EMAIL_GURU", "JAWATAN CADANGAN", "JAWATAN_CADANGAN", "PENGALAMAN_SPM", "KOD_SEKOLAH_ASAL", "NAMA_SEKOLAH_ASAL", "NO_PUSAT_ASAL"] if c in df_guru_filtered.columns]
                 if cols_to_show:
-                    st.dataframe(df_guru[cols_to_show], use_container_width=True, hide_index=True)
-                    kosong = df_guru[df_guru["JANTINA"].isin(["", "KOSONG"]) | df_guru["POSKOD_RUMAH"].isin(["", "KOSONG"]) | df_guru["TELEFON_GURU"].isin(["", "KOSONG"])]
+                    st.dataframe(df_guru_filtered[cols_to_show], use_container_width=True, hide_index=True)
+                    kosong = df_guru_filtered[df_guru_filtered["JANTINA"].isin(["", "KOSONG"]) | df_guru_filtered["POSKOD_RUMAH"].isin(["", "KOSONG"]) | df_guru_filtered["TELEFON_GURU"].isin(["", "KOSONG"])] if "JANTINA" in df_guru_filtered.columns and "POSKOD_RUMAH" in df_guru_filtered.columns and "TELEFON_GURU" in df_guru_filtered.columns else pd.DataFrame()
                     if not kosong.empty:
                         st.warning(f"⚠️ Ada {len(kosong)} guru dengan data KOSONG (JANTINA/POSKOD/ALAMAT/TELEFON/EMAIL). Sila edit di bawah.")
                 
-                st.download_button(" Export Excel Lengkap", to_excel(df_guru), file_name=f"guru_{kod}_lengkap.xlsx", use_container_width=True)
+                st.download_button(" Export Excel Lengkap (Ikut Filter)", to_excel(df_guru_filtered), file_name=f"guru_{kod}_lengkap_{'_'.join(filter_jawatan_sup) if filter_jawatan_sup else 'semua'}.xlsx", use_container_width=True)
                 st.markdown("---")
                 st.subheader("✏️ Edit Data Guru (Lengkapkan yang kosong)")
-                edit_ic = st.selectbox("Pilih IC guru untuk edit", df_guru["IC"].tolist(), format_func=lambda x: f"{x} - {df_guru[df_guru['IC']==x]['NAMA GURU'].values[0] if not df_guru[df_guru['IC']==x].empty else x}")
+                # Use filtered list for edit too
+                df_for_edit = df_guru_filtered if 'df_guru_filtered' in locals() else df_guru
+                edit_ic = st.selectbox("Pilih IC guru untuk edit", df_for_edit["IC"].tolist() if "IC" in df_for_edit.columns else [], format_func=lambda x: f"{x} - {df_for_edit[df_for_edit['IC']==x]['NAMA GURU'].values[0] if not df_for_edit[df_for_edit['IC']==x].empty else x}")
                 if edit_ic:
                     guru_edit = df_guru[df_guru["IC"] == edit_ic].iloc[0] if not df_guru[df_guru["IC"] == edit_ic].empty else None
                     if guru_edit is not None:
@@ -1167,8 +1462,24 @@ if st.session_state.role == "SUP":
                         c3.metric("Penyelia Kawasan", counts.get("Penyelia Kawasan", 0))
                         c4.metric("Pengawas Peperiksaan", counts.get("Pengawas Peperiksaan", 0), delta=f"Perlu {total_kelas_alert if 'total_kelas_alert' in locals() else 6}")
                     except: pass
-                    st.dataframe(df_cad, use_container_width=True)
-                    st.download_button("📥 Export Cadangan", to_excel(df_cad), file_name=f"cadangan_{kod}.xlsx")
+                    # V24 FIX: Show clean without duplicate id columns
+                    clean_cols = ["NAMA_GURU", "IC_GURU", "JANTINA", "POSKOD_RUMAH", "ALAMAT_RUMAH", "TELEFON_GURU", "EMAIL_GURU", "JAWATAN_CADANGAN", "STATUS", "NAMA_SEKOLAH_ASAL"]
+                    # V29: find columns case-insensitive
+                    cols_map = {str(c).lower(): c for c in df_cad.columns}
+                    clean_show = []
+                    for wanted in clean_cols:
+                        if wanted in df_cad.columns:
+                            clean_show.append(wanted)
+                        elif wanted.lower() in cols_map:
+                            clean_show.append(cols_map[wanted.lower()])
+                    df_clean_show = df_cad[clean_show] if clean_show else df_cad
+                    # Remove any duplicate columns by lowercase name
+                    try:
+                        df_clean_show = df_clean_show.loc[:, ~df_clean_show.columns.str.lower().duplicated()]
+                    except:
+                        pass
+                    st.dataframe(df_clean_show, use_container_width=True)
+                    st.download_button("📥 Export Cadangan", to_excel(df_clean_show), file_name=f"cadangan_{kod}.xlsx")
 
         elif menu == "hantar":
             st.header(f"Hantar Cadangan ke PPD {info.get('kod_ppd', 'BA')}")
@@ -1177,14 +1488,38 @@ if st.session_state.role == "SUP":
                 st.warning("Belum ada cadangan. Pergi menu Cadangan Lantikan dulu.")
             else:
                 kod_ppd_sup = str(info.get('kod_ppd', 'BA')).upper()
-                status_s = df_cad["STATUS"].astype(str).str.upper() if "STATUS" in df_cad.columns else pd.Series([""] * len(df_cad), index=df_cad.index)
+                # V23 FIX: check both STATUS and status columns
+                if "STATUS" in df_cad.columns:
+                    status_s = df_cad["STATUS"].astype(str)
+                elif "status" in df_cad.columns:
+                    status_s = df_cad["status"].astype(str)
+                else:
+                    status_s = pd.Series([""] * len(df_cad), index=df_cad.index)
+                status_s = status_s.fillna("").astype(str).str.upper()
+                # Also check alternative column if empty
+                if "status" in df_cad.columns and (status_s == "").all():
+                    status_s = df_cad["status"].fillna("").astype(str).str.upper()
                 m_lulus = status_s.str.contains("LULUS", na=False)
                 m_hantar = status_s.str.contains("HANTAR", na=False) & ~m_lulus
                 m_baru = ~(m_lulus | m_hantar)   # DICADANGKAN / TOLAK PPD - boleh dihantar (semula)
                 bil_baru = int(m_baru.sum())
                 
-                display_cols = [c for c in ["NAMA_GURU", "IC_GURU", "JANTINA", "POSKOD_RUMAH", "ALAMAT_RUMAH", "TELEFON_GURU", "EMAIL_GURU", "JAWATAN_CADANGAN", "PENGALAMAN_SPM", "NO_PUSAT_ASAL", "KOD_SEKOLAH_ASAL", "NAMA_SEKOLAH_ASAL", "STATUS"] if c in df_cad.columns]
-                st.dataframe(df_cad[display_cols] if display_cols else df_cad, use_container_width=True)
+                # V24 FIX: Clean duplicate columns - only show unique, readable columns
+                # Remove duplicate lowercase columns if uppercase exists
+                cols_to_show = ["NAMA_GURU", "IC_GURU", "JANTINA", "POSKOD_RUMAH", "ALAMAT_RUMAH", "TELEFON_GURU", "EMAIL_GURU", "JAWATAN_CADANGAN", "PENGALAMAN_SPM", "NO_PUSAT_ASAL", "KOD_SEKOLAH_ASAL", "NAMA_SEKOLAH_ASAL", "STATUS"]
+                display_cols = [c for c in cols_to_show if c in df_cad.columns]
+                # Deduplicate columns list itself
+                seen = set()
+                uniq_display = []
+                for c in display_cols:
+                    if c.lower() not in seen:
+                        uniq_display.append(c)
+                        seen.add(c.lower())
+                # Also ensure df_cad doesn't have duplicate columns (lower + upper)
+                # Keep only upper case versions for display
+                df_display = df_cad[uniq_display].copy() if uniq_display else df_cad
+                # Rename for readability
+                st.dataframe(df_display, use_container_width=True)
                 
                 k1, k2, k3 = st.columns(3)
                 with k1: st.metric("Belum dihantar", bil_baru)
@@ -1210,8 +1545,18 @@ if st.session_state.role == "SUP":
                         if not ids:
                             st.error("Tiada ID cadangan - data tak lengkap, hubungi admin.")
                         else:
-                            berjaya, gagal = hantar_ke_ppd(ids, kod_ppd_sup)
-                            if berjaya: flash("success", f"✅ Berjaya hantar {berjaya} cadangan ke PPD {kod_ppd_sup} - {PPD_MAP.get(kod_ppd_sup, '')}!")
+                            berjaya, gagal = hantar_ke_ppd(ids, kod_ppd_sup, df_sasaran=sasaran)
+                            if berjaya:
+                                flash("success", f"✅ Berjaya hantar {berjaya} cadangan ke PPD {kod_ppd_sup} - {PPD_MAP.get(kod_ppd_sup, '')}!")
+                                # V25: Clear cache to force fresh data
+                                try:
+                                    st.cache_data.clear()
+                                    st.cache_resource.clear()
+                                except:
+                                    pass
+                                # Force small delay to let Supabase replicate
+                                import time
+                                time.sleep(1)
                             if gagal: flash("error", "Sebahagian gagal dihantar: " + "; ".join(gagal[:3]))
                             st.rerun()
                 
@@ -1367,41 +1712,104 @@ if st.session_state.role == "SUP":
                     for _, r in df_lulus.iterrows():
                         nama = r.get("NAMA_GURU", "") or r.get("nama_guru", "")
                         ic = r.get("IC_GURU", "") or r.get("ic_guru", "")
-                        jawatan = r.get("JAWATAN_CADANGAN", "") or r.get("jawatan_cadangan", "")
-                        pusat = r.get("kod_pusat", "") or r.get("KOD_PUSAT", "")
+                        jawatan = r.get("JAWATAN_CADANGAN", "") or r.get("jawatan_cadangan", "") or ""
+                        pusat = r.get("kod_pusat", "") or r.get("KOD_PUSAT", "") or ""
                         no_surat = r.get("no_surat", "") or ""
+                        telefon = r.get("TELEFON_GURU", "") or r.get("telefon_guru", "") or r.get("NO_TELEFON", "") or ""
                         
-                        with st.expander(f"{nama} - {jawatan} - {pusat} - {no_surat}"):
-                            # Generate individual surat HTML
+                        # Detect if this is Penyelia Kawasan placed in Bilik Kebal
+                        is_penyelia_bk = "PENYELIA" in jawatan.upper() and ("BK-" in pusat.upper() or "CB" in pusat.upper() or "BILIK" in pusat.upper() or str(r.get("status","")).upper() in ["DITEMPATKAN BILIK KEBAL", "SURAT PK DIHANTAR", "SURAT PK DIHANTAR KE SEKOLAH"])
+                        # Also check data json for bilik kebal
+                        data_json = r.get("data") if isinstance(r.get("data"), dict) else {}
+                        if isinstance(data_json, str):
+                            try:
+                                data_json = json.loads(data_json)
+                            except:
+                                data_json = {}
+                        if data_json and ("kod_bilik_kebal" in str(data_json).lower() or "pusat_jagaan" in str(data_json).lower()):
+                            is_penyelia_bk = True
+                        
+                        label_bk = "🔐 Penyelia Kawasan - Bilik Kebal" if is_penyelia_bk else f"{jawatan}"
+                        
+                        with st.expander(f"{nama} - {label_bk} - {pusat} - {no_surat}"):
                             try:
                                 pusat_nama = ""
-                                try:
-                                    df_pusat = get_pusat_df()
-                                    for _, pr in df_pusat.iterrows():
-                                        d = pr.get("data") if isinstance(pr.get("data"), dict) else {}
-                                        if isinstance(d, str):
-                                            try: d = json.loads(d)
-                                            except: d = {}
-                                        no_p = str(pr.get("no_pusat") or d.get("NO_PUSAT") or "").upper().strip()
-                                        if no_p == pusat.upper():
-                                            pusat_nama = pr.get("nama_pusat") or d.get("NAMA_PUSAT") or ""
-                                            break
-                                except:
-                                    pusat_nama = ""
+                                alamat_bk = ""
+                                nama_bk = pusat
+                                # Try get bilik kebal details
+                                if is_penyelia_bk:
+                                    try:
+                                        res_bk = supa.table("bilik_kebal_master").select("*").eq("kod_bilik_kebal", pusat.upper()).limit(1).execute()
+                                        if res_bk.data:
+                                            nama_bk = res_bk.data[0].get("nama_bilik_kebal", pusat)
+                                            alamat_bk = res_bk.data[0].get("alamat", "")
+                                            pusat_nama = nama_bk
+                                    except:
+                                        pass
+                                else:
+                                    try:
+                                        df_pusat = get_pusat_df()
+                                        for _, pr in df_pusat.iterrows():
+                                            d = pr.get("data") if isinstance(pr.get("data"), dict) else {}
+                                            if isinstance(d, str):
+                                                try: d = json.loads(d)
+                                                except: d = {}
+                                            no_p = str(pr.get("no_pusat") or d.get("NO_PUSAT") or "").upper().strip()
+                                            if no_p == pusat.upper():
+                                                pusat_nama = pr.get("nama_pusat") or d.get("NAMA_PUSAT") or ""
+                                                break
+                                    except:
+                                        pusat_nama = ""
                                 
-                                html_surat = generate_surat_html(
-                                    nama, ic, jawatan,
-                                    r.get("KOD_SEKOLAH_ASAL", "") or kod,
-                                    r.get("NAMA_SEKOLAH_ASAL", "") or info.get('nama_sekolah',''),
-                                    pusat, pusat_nama, no_surat,
-                                    r.get("KOD_PPD", "") or info.get('kod_ppd',''),
-                                    PPD_MAP.get(r.get("KOD_PPD", "") or info.get('kod_ppd',''), ""),
-                                    datetime.date.today().strftime('%d %B %Y')
-                                )
-                                st.components.v1.html(html_surat, height=500, scrolling=True)
-                                st.download_button(f"Download Surat {nama}", data=html_surat.encode('utf-8'), file_name=f"Surat_{nama.replace(' ', '_')}_{no_surat.replace('/', '_')}.html", mime="text/html", use_container_width=True, key=f"dl_{r.get('id','')}")
+                                # Get pusat jagaan for penyelia
+                                pusat_jagaan_list = []
+                                if is_penyelia_bk:
+                                    if isinstance(data_json, dict):
+                                        pj = data_json.get("pusat_jagaan") or data_json.get("pusat_jagaan_str") or []
+                                        if isinstance(pj, str):
+                                            pusat_jagaan_list = [p.strip() for p in pj.split(",") if p.strip()]
+                                        elif isinstance(pj, list):
+                                            pusat_jagaan_list = pj
+                                    if not pusat_jagaan_list:
+                                        pusat_jagaan_list = [pusat]
+                                    
+                                    html_surat = generate_surat_penyelia_kawasan_html(
+                                        nama=nama,
+                                        ic=ic,
+                                        sek_asal=r.get("KOD_SEKOLAH_ASAL", "") or r.get("kod_sekolah_asal", "") or kod,
+                                        nama_sek_asal=r.get("NAMA_SEKOLAH_ASAL", "") or r.get("nama_sekolah_asal", "") or info.get('nama_sekolah',''),
+                                        telefon=telefon,
+                                        kod_bilik_kebal=pusat,
+                                        nama_bilik_kebal=nama_bk,
+                                        alamat_bilik_kebal=alamat_bk,
+                                        pusat_jagaan_list=pusat_jagaan_list,
+                                        no_surat=no_surat,
+                                        kod_ppd=r.get("KOD_PPD", "") or r.get("kod_ppd", "") or info.get('kod_ppd',''),
+                                        ppd_name=PPD_MAP.get(r.get("KOD_PPD", "") or r.get("kod_ppd", "") or info.get('kod_ppd',''), ""),
+                                        tarikh=datetime.date.today().strftime('%d %B %Y')
+                                    )
+                                else:
+                                    html_surat = generate_surat_html(
+                                        nama, ic, jawatan,
+                                        r.get("KOD_SEKOLAH_ASAL", "") or kod,
+                                        r.get("NAMA_SEKOLAH_ASAL", "") or info.get('nama_sekolah',''),
+                                        pusat, pusat_nama, no_surat,
+                                        r.get("KOD_PPD", "") or info.get('kod_ppd',''),
+                                        PPD_MAP.get(r.get("KOD_PPD", "") or info.get('kod_ppd',''), ""),
+                                        datetime.date.today().strftime('%d %B %Y')
+                                    )
+                                
+                                st.components.v1.html(html_surat, height=600, scrolling=True)
+                                st.download_button(f"📥 Download Surat {nama} - {label_bk}", data=html_surat.encode('utf-8'), file_name=f"Surat_{label_bk.replace(' ', '_')}_{nama.replace(' ', '_')}_{no_surat.replace('/', '_')}.html", mime="text/html", use_container_width=True, key=f"dl_{r.get('id','')}")
+                                
+                                # Show extra info for penyelia kawasan
+                                if is_penyelia_bk and pusat_jagaan_list:
+                                    st.info(f"🔐 Penyelia Kawasan ini ditempatkan di Bilik Kebal {pusat} ({nama_bk}) dan bertanggungjawab atas {len(pusat_jagaan_list)} pusat: {', '.join(pusat_jagaan_list)}")
+                                
                             except Exception as e:
                                 st.error(f"Error generate surat: {e}")
+                                import traceback
+                                st.error(traceback.format_exc())
 
 # ================= ROLE: PPD =================
 elif st.session_state.role == "PPD":
@@ -1415,7 +1823,7 @@ elif st.session_state.role == "PPD":
         add_refresh_button()
         
         MENU_PPD = [('dashboard', '📊 Dashboard PPD'), ('sekolah', '🏫 Sekolah dalam PPD'), ('pusat', '🏫 Pusat di PPD'), 
-                    ('cadangan', '📋 Cadangan SUP'), ('jana', '🚀 Jana Keseluruhan'), ('hasil', '📋 Hasil Janaan'), ('manual', '📌 Penempatan Manual'), ('kelulusan', '✅ Kelulusan'), 
+                    ('cadangan', '📋 Cadangan SUP'), ('jana', '🚀 Jana Keseluruhan'), ('hasil', '📋 Hasil Janaan'), ('manual', '📌 Penempatan Manual'), ('selenggara', '🔐 Selenggara Bilik Kebal'), ('kelulusan', '✅ Kelulusan'), 
                     ('export', '📥 Export'), ('keluar', '🚪 Log Keluar')]
         menu = st.radio("Menu PPD", [k for k, _ in MENU_PPD], format_func=dict(MENU_PPD).get, label_visibility="collapsed", key="ppd_menu_radio")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -2491,17 +2899,23 @@ elif st.session_state.role == "PPD":
             
             # Paparan semasa
             st.markdown(f"### 🏫 Pusat {pilih_pusat_manual} - Penempatan Semasa")
-            col_curr1, col_curr2, col_curr3, col_curr4 = st.columns(4)
-            # FIX: Gunakan ID comparison, bukan object comparison (pandas Series error)
+            col_curr1, col_curr2, col_curr3, col_curr4, col_curr5, col_curr6 = st.columns(6)
+            # FIX: 5 jawatan - Penyelia dari SUP, Selenggara dari PPD
             kp_curr_dict = {}
             tkp_curr_dict = {}
+            penyelia_curr_dict = {}
+            selenggara_curr_dict = {}
             peng_curr_dict = {}
             for k, c in tugas_pusat_ini.items():
-                jaw = str(c.get("JAWATAN_CADANGAN") or c.get("jawatan_cadangan") or c.get("JAWATAN") or "")
-                if "Ketua Pengawas" in jaw and "Timbalan" not in jaw:
+                jaw = str(c.get("JAWATAN_CADANGAN") or c.get("jawatan_cadangan") or c.get("JAWATAN") or "").upper()
+                if "KETUA PENGAWAS" in jaw and "TIMBALAN" not in jaw:
                     kp_curr_dict[k] = c
-                elif "Timbalan" in jaw:
+                elif "TIMBALAN" in jaw:
                     tkp_curr_dict[k] = c
+                elif "PENYELIA KAWASAN" in jaw or ("PENYELIA" in jaw and "KAWASAN" in jaw):
+                    penyelia_curr_dict[k] = c
+                elif "SELENGGARA" in jaw or "BILIK KEBAL" in jaw:
+                    selenggara_curr_dict[k] = c
                 else:
                     peng_curr_dict[k] = c
             kp_curr = list(kp_curr_dict.values())
@@ -2513,9 +2927,13 @@ elif st.session_state.role == "PPD":
             with col_curr2:
                 st.metric("Timbalan KP", f"{len(tkp_curr)}/1", delta="OK" if len(tkp_curr)==1 else "Perlu 1", delta_color="normal" if len(tkp_curr)==1 else "inverse")
             with col_curr3:
-                perlu_p = int(info_pusat["PERLU"].values[0]) if not info_pusat.empty else 0
-                st.metric("Pengawas", f"{len(peng_curr)}/{perlu_p-2}", delta=f"Perlu {perlu_p-2}")
+                st.metric("Penyelia Kawasan", f"{len(penyelia_curr_dict)}/1", delta="OK" if len(penyelia_curr_dict)>=1 else "Perlu 1", delta_color="normal" if len(penyelia_curr_dict)>=1 else "inverse")
             with col_curr4:
+                st.metric("Selenggara BK", f"{len(selenggara_curr_dict)}/1", delta="OK" if len(selenggara_curr_dict)>=1 else "Perlu 1", delta_color="normal" if len(selenggara_curr_dict)>=1 else "inverse")
+            with col_curr5:
+                perlu_p = int(info_pusat["PERLU"].values[0]) if not info_pusat.empty else 0
+                st.metric("Pengawas", f"{len(peng_curr)}/{max(perlu_p-4,0)}", delta=f"Perlu {max(perlu_p-4,0)}")
+            with col_curr6:
                 st.metric("Jumlah", f"{len(tugas_pusat_ini)}/{perlu_p}", delta="Cukup" if len(tugas_pusat_ini)>=perlu_p else f"Kurang {perlu_p-len(tugas_pusat_ini)}")
             
             # Check pelanggaran max 3
@@ -2737,7 +3155,7 @@ elif st.session_state.role == "PPD":
                     return kp == "" or kp.lower() in ("none", "null", "nan", "nat")
                 df_peng_calon = df_peng_calon_all[df_peng_calon_all.apply(is_belum_peng, axis=1)].copy()
                 # Pengawas sahaja (bukan KP/TKP)
-                df_peng_calon = df_peng_calon[~df_peng_calon["JAWATAN_CADANGAN"].astype(str).str.contains("Ketua Pengawas|Timbalan", case=False, na=False, regex=True)]
+                df_peng_calon = df_peng_calon[~df_peng_calon["JAWATAN_CADANGAN"].astype(str).str.contains("Ketua Pengawas|Timbalan|Penyelia|Selenggara|Bilik Kebal", case=False, na=False, regex=True)]
                 if kod_tuan_m:
                     df_peng_calon = df_peng_calon[~df_peng_calon["KOD_SEKOLAH_ASAL"].astype(str).str.upper().str.strip().eq(kod_tuan_m)]
                 def check_peng_max3(row):
@@ -2814,6 +3232,38 @@ elif st.session_state.role == "PPD":
                 st.warning(f"Belum ada cadangan SUP untuk PPD {kod_ppd}")
                 st.stop()
             
+            # ===== FILTER IKUT JAWATAN (MESTI AWAL) + CLEAN NAN =====
+            # Clean NAN rows from df_cad_all - remove rows where KOD_SEKOLAH_ASAL is NAN/nan/None/empty
+            def is_valid_sekolah(row):
+                kod = str(row.get("KOD_SEKOLAH_ASAL") or row.get("kod_sekolah_asal") or row.get("KOD_SEKOLAH") or row.get("kod_sekolah") or "").strip()
+                if kod.lower() in ("", "nan", "none", "null", "nat", "-"):
+                    return False
+                return True
+            
+            # Filter out NAN sekolah for display, but keep count for info
+            df_cad_valid = df_cad_all[df_cad_all.apply(is_valid_sekolah, axis=1)].copy()
+            df_cad_invalid = df_cad_all[~df_cad_all.apply(is_valid_sekolah, axis=1)].copy()
+            if not df_cad_invalid.empty:
+                st.warning(f"⚠️ Ada {len(df_cad_invalid)} cadangan dengan KOD SEKOLAH kosong/NAN - akan disembunyikan dari senarai sekolah. Sila betulkan di SUP.")
+            
+            jawatan_list_all = []
+            for _, r in df_cad_valid.iterrows():
+                j = str(r.get("JAWATAN_CADANGAN") or r.get("jawatan_cadangan") or r.get("JAWATAN") or "").strip()
+                if j and j.lower() not in ("", "nan", "none") and j not in jawatan_list_all:
+                    jawatan_list_all.append(j)
+            order_jawatan = ["Ketua Pengawas", "Timbalan Ketua Pengawas", "Penyelia Kawasan", "Pengawas Peperiksaan", "Selenggara Bilik Kebal"]
+            jawatan_sorted = sorted(jawatan_list_all, key=lambda x: (order_jawatan.index(x) if x in order_jawatan else 99, x))
+            
+            # Default filter from session
+            filter_jawatan = st.session_state.get("filter_jawatan_cad", [])
+            if filter_jawatan is None:
+                filter_jawatan = []
+            
+            # Init df_cad_filtered as valid first
+            df_cad_filtered = df_cad_valid.copy()
+            if filter_jawatan:
+                df_cad_filtered = df_cad_valid[df_cad_valid.apply(lambda r: str(r.get("JAWATAN_CADANGAN") or r.get("jawatan_cadangan") or r.get("JAWATAN") or "").strip() in filter_jawatan, axis=1)].copy()
+            
             # Get sekolah list in PPD
             try:
                 res_sek = supa.table("sekolah_master").select("*").eq("kod_ppd", kod_ppd).limit(2000).execute()
@@ -2821,11 +3271,18 @@ elif st.session_state.role == "PPD":
             except:
                 df_sek_list = pd.DataFrame()
             
-            # Build sekolah groups dari cadangan
+            # Build sekolah groups dari cadangan (ikut filter) - SKIP NAN
             sekolah_groups = {}
-            for _, r in df_cad_all.iterrows():
-                kod_sek = str(r.get("KOD_SEKOLAH_ASAL") or r.get("kod_sekolah_asal") or r.get("KOD_SEKOLAH") or r.get("kod_sekolah") or "TIADA KOD").upper().strip()
-                nama_sek = str(r.get("NAMA_SEKOLAH_ASAL") or r.get("nama_sekolah_asal") or r.get("NAMA_SEKOLAH") or kod_sek)[:50]
+            for _, r in df_cad_filtered.iterrows():
+                kod_sek_raw = r.get("KOD_SEKOLAH_ASAL") or r.get("kod_sekolah_asal") or r.get("KOD_SEKOLAH") or r.get("kod_sekolah") or ""
+                kod_sek = str(kod_sek_raw).strip().upper()
+                if kod_sek.lower() in ("", "nan", "none", "null", "nat", "-", "tiada kod"):
+                    continue
+                nama_sek_raw = r.get("NAMA_SEKOLAH_ASAL") or r.get("nama_sekolah_asal") or r.get("NAMA_SEKOLAH") or kod_sek
+                nama_sek = str(nama_sek_raw).strip()
+                if nama_sek.lower() in ("", "nan", "none", "null"):
+                    nama_sek = kod_sek
+                nama_sek = nama_sek[:50]
                 key = f"{kod_sek} - {nama_sek}"
                 if key not in sekolah_groups:
                     sekolah_groups[key] = []
@@ -2845,10 +3302,101 @@ elif st.session_state.role == "PPD":
                 belum = df_cad_all[df_cad_all.apply(is_belum, axis=1)]
                 st.metric("✅ Belum Dilantik", len(belum), delta=f"{len(df_cad_all)-len(belum)} telah dilantik")
             
+            st.markdown("### 🔍 Filter Ikut Jawatan")
+            st.caption("Filter untuk tengok siapa Penyelia Kawasan, Ketua Pengawas, Timbalan, Pengawas Peperiksaan - senang PPD semak")
+            
+            # V20: SIMPLE - no widget key manipulation at all, use direct variable
+            if "filter_jawatan_cad" not in st.session_state:
+                st.session_state["filter_jawatan_cad"] = []
+            
+            col_f1, col_f2, col_f3, col_f4 = st.columns(4)
+            with col_f1:
+                # V21 FIX DefaultNotInOptionsError: pastikan default ada dalam options
+                # Jika Penyelia Kawasan tidak ada dalam jawatan_sorted (data kosong), tambah manual
+                safe_default = [x for x in st.session_state["filter_jawatan_cad"] if x in jawatan_sorted]
+                # Jika user pilih Penyelia Kawasan tapi jawatan_sorted kosong, tetap tunjuk semua option yang mungkin
+                if not jawatan_sorted:
+                    jawatan_sorted = ["Ketua Pengawas", "Timbalan Ketua Pengawas", "Penyelia Kawasan", "Pengawas Peperiksaan"]
+                    safe_default = st.session_state["filter_jawatan_cad"]
+                # Jika safe_default kosong tapi session ada value yang bukan dalam options, guna empty supaya tak error
+                # Tapi untuk kes Penyelia Kawasan, kita benarkan jika memang dalam senarai tetap
+                if st.session_state["filter_jawatan_cad"] and not safe_default:
+                    # Kalau filter ada tapi takde dalam options, jangan error - guna filter tu sebagai options tambahan
+                    for v in st.session_state["filter_jawatan_cad"]:
+                        if v not in jawatan_sorted:
+                            jawatan_sorted.append(v)
+                    safe_default = st.session_state["filter_jawatan_cad"]
+                
+                filter_jawatan_ui = st.multiselect("Filter Jawatan", jawatan_sorted, default=safe_default, placeholder="Pilih jawatan - kosong = semua")
+            with col_f2:
+                if filter_jawatan_ui:
+                    st.metric(f"Filter: {len(filter_jawatan_ui)} jawatan", f"{len(df_cad_valid[df_cad_valid.apply(lambda r: str(r.get('JAWATAN_CADANGAN') or r.get('jawatan_cadangan') or r.get('JAWATAN') or '').strip() in filter_jawatan_ui, axis=1)]) if filter_jawatan_ui else len(df_cad_all)} guru")
+                else:
+                    st.metric("Semua Jawatan", f"{len(df_cad_all)} guru")
+            with col_f3:
+                if st.button("🔐 Hanya Penyelia Kawasan", use_container_width=True, key="btn_filter_pk"):
+                    st.session_state["filter_jawatan_cad"] = ["Penyelia Kawasan"]
+                    st.rerun()
+            with col_f4:
+                if st.button("🔄 Clear Filter", use_container_width=True, key="btn_clear_filter"):
+                    st.session_state["filter_jawatan_cad"] = []
+                    st.rerun()
+            
+            # V22 ROBUST: filter using normalized lowercase contains
+            def match_jawatan(row_jawatan, filter_list):
+                if not filter_list:
+                    return True
+                rj = str(row_jawatan).strip().lower()
+                rj = ' '.join(rj.split())
+                for f in filter_list:
+                    f_low = str(f).strip().lower()
+                    f_low = ' '.join(f_low.split())
+                    # Exact or contains
+                    if f_low == rj or f_low in rj or rj in f_low:
+                        return True
+                    # Special for Penyelia Kawasan - check both words
+                    if 'penyelia' in f_low and 'penyelia' in rj:
+                        return True
+                return False
+            
+            # Determine active filter list
+            active_filter = filter_jawatan_ui if filter_jawatan_ui else st.session_state.get("filter_jawatan_cad", [])
+            
+            if active_filter:
+                df_cad_filtered = df_cad_valid[df_cad_valid['JAWATAN_CADANGAN'].apply(lambda x: match_jawatan(x, active_filter))].copy()
+                # Save for next run default
+                if active_filter != st.session_state["filter_jawatan_cad"]:
+                    st.session_state["filter_jawatan_cad"] = active_filter
+                filter_jawatan_ui = active_filter
+            else:
+                df_cad_filtered = df_cad_valid.copy()
+            
+            # Debug info if filter gives 0 but data has Penyelia
+            if active_filter and len(df_cad_filtered) == 0:
+                total_pk = len(df_cad_valid[df_cad_valid['JAWATAN_CADANGAN_NORM'].str.contains('penyelia', na=False)])
+                st.warning(f"⚠️ Filter {active_filter} jumpa 0, tapi dalam DB ada {total_pk} Penyelia Kawasan (mungkin ejaan berbeza). Senarai jawatan dalam data: {df_cad_valid['JAWATAN_CADANGAN'].unique().tolist()[:10]}")
+            
+            if st.session_state.get("filter_jawatan_cad"):
+                st.success(f"✅ Filter aktif: {', '.join(st.session_state.get('filter_jawatan_cad', []))} - Jumpa {len(df_cad_filtered)} guru")
+            
+            # Show breakdown by jawatan
+            st.markdown("#### 📊 Pecahan Ikut Jawatan")
+            jawatan_counts = {}
+            for _, r in df_cad_filtered.iterrows():
+                j = str(r.get("JAWATAN_CADANGAN") or r.get("jawatan_cadangan") or "TIADA").strip()
+                jawatan_counts[j] = jawatan_counts.get(j, 0) + 1
+            
+            if jawatan_counts:
+                cols_j = st.columns(len(jawatan_counts))
+                for idx, (j, cnt) in enumerate(sorted(jawatan_counts.items(), key=lambda x: (order_jawatan.index(x[0]) if x[0] in order_jawatan else 99, x[0]))):
+                    with cols_j[idx % len(cols_j)]:
+                        icon = "👑" if "Ketua Pengawas" in j and "Timbalan" not in j else "🎖️" if "Timbalan" in j else "🔐" if "Penyelia" in j else "👨‍🏫" if "Pengawas" in j else "🔧"
+                        st.metric(f"{icon} {j}", cnt)
+            
             st.markdown("---")
             
             # Ringkasan ikut sekolah
-            st.markdown("### 📋 Ringkasan Cadangan Mengikut Sekolah")
+            st.markdown("### 📋 Ringkasan Cadangan Mengikut Sekolah (Ikut Filter Jawatan)")
             summary_rows = []
             for key, guru_list in sorted(sekolah_groups.items()):
                 kod = key.split(" - ")[0]
@@ -2869,7 +3417,9 @@ elif st.session_state.role == "PPD":
             st.download_button("📥 Export Ringkasan Cadangan Ikut Sekolah", to_excel(df_summary), file_name=f"ringkasan_cadangan_{kod_ppd}.xlsx", use_container_width=True)
             
             st.markdown("---")
-            st.markdown("### 🔍 Detail Cadangan Ikut Sekolah - Pilih Sekolah")
+            st.markdown("### 🔍 Detail Cadangan Ikut Sekolah - Pilih Sekolah (Ikut Filter Jawatan)")
+            if filter_jawatan:
+                st.info(f"📋 Menunjukkan guru dengan jawatan: {', '.join(filter_jawatan)} sahaja. Clear filter untuk lihat semua.")
             
             # Pilih sekolah dropdown
             pilih_sek_cad = st.selectbox(
@@ -2902,9 +3452,28 @@ elif st.session_state.role == "PPD":
                     return pd.DataFrame(rows)
                 
                 with tab_all:
-                    df_all_guru = make_df_from_list(guru_list)
+                    # Additional filter inside school view by jawatan
+                    if filter_jawatan:
+                        guru_list_filtered_j = [g for g in guru_list if str(g.get("JAWATAN_CADANGAN") or g.get("jawatan_cadangan") or "").strip() in filter_jawatan]
+                    else:
+                        guru_list_filtered_j = guru_list
+                    
+                    df_all_guru = make_df_from_list(guru_list_filtered_j)
+                    if filter_jawatan:
+                        st.caption(f"Filter aktif: {', '.join(filter_jawatan)} - {len(guru_list_filtered_j)} guru dalam sekolah ini")
                     st.dataframe(df_all_guru, use_container_width=True, hide_index=True)
                     st.download_button(f"📥 Export {pilih_sek_cad.split(' - ')[0]} - Semua", to_excel(df_all_guru), file_name=f"cadangan_{pilih_sek_cad.split(' - ')[0]}_semua.xlsx", use_container_width=True, key="exp_all")
+                    
+                    # Show jawatan breakdown for this school
+                    if guru_list_filtered_j:
+                        j_count_school = {}
+                        for g in guru_list_filtered_j:
+                            jj = str(g.get("JAWATAN_CADANGAN") or g.get("jawatan_cadangan") or "TIADA").strip()
+                            j_count_school[jj] = j_count_school.get(jj, 0) + 1
+                        cols_js = st.columns(len(j_count_school))
+                        for idx, (jj, cnt) in enumerate(j_count_school.items()):
+                            with cols_js[idx]:
+                                st.metric(jj, cnt)
                 
                 with tab_belum:
                     belum_list = [g for g in guru_list if str(g.get("kod_pusat") or g.get("KOD_PUSAT") or "").strip() in ("", "None", "none", "null", "nan", "nat")]
@@ -3125,8 +3694,815 @@ elif st.session_state.role == "PPD":
                     st.download_button(f"Download Semula Surat {kod_sek_pilih}", data=html_prev.encode('utf-8'), file_name=f"Surat_Lantikan_{kod_sek_pilih}_{kod_ppd}.html", mime="text/html", use_container_width=True, key=f"dl_surat2_{kod_sek_pilih}")
                     st.info("Surat ini akan masuk ke SUP untuk download dan bagi kepada guru di sekolah dia")
 
+
+        elif menu == "selenggara":
+            st.markdown(f"""
+            <div style="background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%); padding:20px; border-radius:12px; color:white; margin-bottom:20px; border:2px solid #002171;">
+                <h2 style="margin:0; color:white;">🔐 Selenggara Bilik Kebal - PPD {kod_ppd} - {PPD_MAP.get(kod_ppd,'')}</h2>
+                <p style="margin:5px 0 0 0; color:#bbdefb;">Tapak Bilik Kebal Master - PPD isi data bilik kebal ikut daerah. Penyelia Kawasan akan ditempatkan ke bilik kebal ini. SUP tidak nampak menu ini.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            def get_bilik_kebal_df(kod_ppd_filter=None):
+                try:
+                    q = supa.table("bilik_kebal_master").select("*").limit(10000)
+                    if kod_ppd_filter:
+                        q = q.eq("kod_ppd", kod_ppd_filter)
+                    res = q.execute()
+                    return pd.DataFrame(res.data or [])
+                except Exception as e:
+                    st.error(f"Error load bilik_kebal_master: {e}")
+                    return pd.DataFrame()
+            
+            df_bk = get_bilik_kebal_df(kod_ppd)
+            
+            c1,c2,c3 = st.columns(3)
+            c1.metric("Bilik Kebal di PPD", len(df_bk))
+            c2.metric("Daerah", PPD_MAP.get(kod_ppd,''))
+            try:
+                res_cad = supa.table("cadangan_sup").select("*", count="exact").eq("kod_ppd", kod_ppd.lower()).limit(1).execute()
+                total_guru_ppd = res_cad.count if hasattr(res_cad,'count') else 0
+            except:
+                total_guru_ppd = 0
+            c3.metric("Guru PPD", total_guru_ppd)
+            
+            tab_form, tab_senarai, tab_import, tab_penyelia, tab_surat = st.tabs(["Tambah Bilik Kebal", "Senarai Bilik Kebal", "Import Pukal Excel", "Tempatkan Penyelia Kawasan", "📄 Jana Surat Penyelia"])
+            
+            with tab_form:
+                st.markdown("### Borang Daftar Bilik Kebal Baru")
+                st.caption("PPD isi form ini, data terus masuk Supabase table bilik_kebal_master")
+                with st.form("form_bilik_kebal"):
+                    col_f1, col_f2 = st.columns(2)
+                    with col_f1:
+                        kod_bk = st.text_input("KOD_BILIK_KEBAL *", placeholder="Contoh: BK-BA001 atau BA-BK01")
+                        nama_bk = st.text_input("NAMA_BILIK_KEBAL *", placeholder="Contoh: Bilik Kebal PPD Klang")
+                        kod_ppd_form = st.text_input("KOD_PPD", value=kod_ppd, disabled=True)
+                    with col_f2:
+                        alamat_bk = st.text_area("ALAMAT *", placeholder="Alamat penuh bilik kebal", height=100)
+                        catatan = st.text_area("Catatan / DATA JSON (optional)", placeholder='Contoh: {"kapasiti": 50}', height=100)
+                    submit_bk = st.form_submit_button("Simpan Bilik Kebal ke Supabase", type="primary", use_container_width=True)
+                    if submit_bk:
+                        if not kod_bk or not nama_bk or not alamat_bk:
+                            st.error("Sila isi KOD, NAMA dan ALAMAT wajib!")
+                        else:
+                            try:
+                                data_json = {}
+                                if catatan:
+                                    try:
+                                        data_json = json.loads(catatan)
+                                    except:
+                                        data_json = {"catatan": catatan}
+                                existing = supa.table("bilik_kebal_master").select("*").eq("kod_bilik_kebal", kod_bk.upper().strip()).limit(1).execute()
+                                if existing.data:
+                                    st.error(f"KOD {kod_bk} sudah wujud!")
+                                else:
+                                    payload = {
+                                        "kod_bilik_kebal": kod_bk.upper().strip(),
+                                        "nama_bilik_kebal": nama_bk.upper().strip(),
+                                        "alamat": alamat_bk.strip(),
+                                        "kod_ppd": kod_ppd.upper().strip(),
+                                        "data": data_json
+                                    }
+                                    supa.table("bilik_kebal_master").insert(payload).execute()
+                                    st.success(f"Berjaya simpan {kod_bk} - {nama_bk}")
+                                    st.balloons()
+                                    st.rerun()
+                            except Exception as e:
+                                st.error(f"Error simpan: {e}")
+            
+            with tab_senarai:
+                st.markdown(f"### Senarai Bilik Kebal PPD {kod_ppd}")
+                if df_bk.empty:
+                    st.info("Belum ada bilik kebal didaftarkan untuk PPD ini.")
+                else:
+                    cari_bk = st.text_input("Cari bilik kebal (kod / nama / alamat)", key="cari_bk")
+                    if cari_bk:
+                        mask = df_bk.apply(lambda r: cari_bk.lower() in str(r.get("kod_bilik_kebal","")).lower() or cari_bk.lower() in str(r.get("nama_bilik_kebal","")).lower() or cari_bk.lower() in str(r.get("alamat","")).lower(), axis=1)
+                        df_show = df_bk[mask]
+                    else:
+                        df_show = df_bk
+                    st.dataframe(df_show, use_container_width=True, hide_index=True)
+                    col_exp1, col_exp2 = st.columns(2)
+                    with col_exp1:
+                        st.download_button("Download Senarai Bilik Kebal (Excel)", to_excel(df_show), file_name=f"bilik_kebal_{kod_ppd}_{datetime.date.today()}.xlsx", use_container_width=True)
+                    with col_exp2:
+                        if st.button("Refresh", use_container_width=True):
+                            st.rerun()
+                    st.markdown("---")
+                    st.markdown("### Buang Bilik Kebal")
+                    if not df_show.empty:
+                        pilih_buang = st.selectbox("Pilih Bilik Kebal untuk buang", df_show["kod_bilik_kebal"].tolist() if "kod_bilik_kebal" in df_show.columns else [], key="buang_bk")
+                        if st.button(f"Buang {pilih_buang}", type="secondary", use_container_width=True):
+                            try:
+                                supa.table("bilik_kebal_master").delete().eq("kod_bilik_kebal", pilih_buang).execute()
+                                st.success(f"Berjaya buang {pilih_buang}")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(str(e))
+            
+            with tab_import:
+                st.markdown("### Import Pukal Bilik Kebal dari Excel")
+                st.info("Format Excel mesti ada column: KOD_BILIK_KEBAL, NAMA_BILIK_KEBAL, ALAMAT, KOD_PPD")
+                df_template = pd.DataFrame([
+                    {"KOD_BILIK_KEBAL": f"BK-{kod_ppd}01", "NAMA_BILIK_KEBAL": f"BILIK KEBAL PPD {PPD_MAP.get(kod_ppd,'')} 1", "ALAMAT": "SMK CONTOH 1, KLANG", "KOD_PPD": kod_ppd},
+                    {"KOD_BILIK_KEBAL": f"BK-{kod_ppd}02", "NAMA_BILIK_KEBAL": f"BILIK KEBAL PPD {PPD_MAP.get(kod_ppd,'')} 2", "ALAMAT": "SMK CONTOH 2, KLANG", "KOD_PPD": kod_ppd},
+                ])
+                st.download_button("Download Template Excel Bilik Kebal", to_excel(df_template), file_name=f"template_bilik_kebal_{kod_ppd}.xlsx", use_container_width=True)
+                st.markdown("---")
+                up_bk = st.file_uploader("Upload Excel Bilik Kebal", type=["xlsx","xls"], key="up_bk_excel")
+                if up_bk:
+                    try:
+                        df_up = pd.read_excel(up_bk, sheet_name=0)
+                        st.write(f"Ada {len(df_up)} baris. Column: {list(df_up.columns)}")
+                        st.dataframe(df_up.head(10), use_container_width=True)
+                        if st.button(f"Import {len(df_up)} Bilik Kebal ke Supabase", type="primary", use_container_width=True):
+                            bar = st.progress(0)
+                            ok = 0
+                            err = 0
+                            for idx, row in df_up.iterrows():
+                                try:
+                                    kod = str(row.get("KOD_BILIK_KEBAL") or row.get("kod_bilik_kebal") or "").upper().strip()
+                                    nama = str(row.get("NAMA_BILIK_KEBAL") or row.get("nama_bilik_kebal") or "").upper().strip()
+                                    alamat = str(row.get("ALAMAT") or row.get("alamat") or "").strip()
+                                    kppd = str(row.get("KOD_PPD") or row.get("kod_ppd") or kod_ppd).upper().strip()
+                                    if not kod or not nama:
+                                        err += 1
+                                        continue
+                                    dup = supa.table("bilik_kebal_master").select("*").eq("kod_bilik_kebal", kod).limit(1).execute()
+                                    if dup.data:
+                                        err += 1
+                                        continue
+                                    supa.table("bilik_kebal_master").insert({"kod_bilik_kebal": kod, "nama_bilik_kebal": nama, "alamat": alamat, "kod_ppd": kppd, "data": {}}).execute()
+                                    ok += 1
+                                except:
+                                    err += 1
+                                bar.progress((idx+1)/len(df_up))
+                            st.success(f"Selesai: {ok} berjaya, {err} gagal/duplicate")
+                            st.balloons()
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Error baca Excel: {e}")
+            
+            with tab_penyelia:
+                st.markdown(f"### Penempatan Penyelia Kawasan ke Bilik Kebal - PPD {kod_ppd}")
+                st.caption("STEP 1: Pilih Bilik Kebal → STEP 2: Pilih Pusat di bawah Bilik Kebal (contoh 12 pusat) → STEP 3: Agihkan pusat tu kepada setiap Penyelia Kawasan (bukan bagi semua untuk sorang)")
+                if df_bk.empty:
+                    st.warning("Belum ada bilik kebal. Sila daftar bilik kebal dulu di tab Tambah / Import.")
+                else:
+                    df_cad_all_bk = get_cadangan_df(kod_ppd=kod_ppd)
+                    if not df_cad_all_bk.empty:
+                        col_jaw = "JAWATAN_CADANGAN" if "JAWATAN_CADANGAN" in df_cad_all_bk.columns else "jawatan_cadangan" if "jawatan_cadangan" in df_cad_all_bk.columns else None
+                        if col_jaw:
+                            df_penyelia = df_cad_all_bk[df_cad_all_bk[col_jaw].astype(str).str.contains("Penyelia Kawasan", case=False, na=False)].copy()
+                        else:
+                            df_penyelia = pd.DataFrame()
+                    else:
+                        df_penyelia = pd.DataFrame()
+                    
+                    st.info(f"Ada {len(df_penyelia)} Penyelia Kawasan dicadangkan SUP untuk PPD {kod_ppd}")
+                    
+                    if not df_penyelia.empty:
+                        df_pusat_raw_all = get_pusat_df()
+                        pusat_list_ppd = []
+                        for _, r in df_pusat_raw_all.iterrows():
+                            d = r.get("data") if isinstance(r.get("data"), dict) else {}
+                            if isinstance(d, str):
+                                try:
+                                    d = json.loads(d)
+                                except:
+                                    d = {}
+                            no_p = str(r.get("no_pusat") or r.get("kod_pusat") or d.get("NO_PUSAT") or "").upper().strip()
+                            if not no_p.startswith(kod_ppd.upper()):
+                                continue
+                            nama_p = r.get("nama_pusat") or d.get("NAMA_PUSAT") or ""
+                            pusat_list_ppd.append({"NO_PUSAT": no_p, "NAMA_PUSAT": nama_p})
+                        df_pusat_ppd_list = pd.DataFrame(pusat_list_ppd)
+                        
+                        # STEP 1: Pilih Bilik Kebal
+                        st.markdown("#### STEP 1: Pilih Bilik Kebal")
+                        pilih_bk_tempat = st.selectbox("Pilih Bilik Kebal", df_bk["kod_bilik_kebal"].tolist() if "kod_bilik_kebal" in df_bk.columns else [], format_func=lambda x: f"{x} - {df_bk[df_bk['kod_bilik_kebal']==x]['nama_bilik_kebal'].values[0][:30] if not df_bk[df_bk['kod_bilik_kebal']==x].empty and 'nama_bilik_kebal' in df_bk.columns else x}", key="pilih_bk_tempat_v8")
+                        
+                        # STEP 2: Pilih Pusat di bawah Bilik Kebal ini
+                        st.markdown(f"#### STEP 2: Pilih Pusat-Pusat Di Bawah Bilik Kebal {pilih_bk_tempat}")
+                        st.caption("Contoh: 1 bilik kebal jaga 12 pusat. Pilih semua pusat yang bernaung bawah bilik kebal ini dulu.")
+                        if not df_pusat_ppd_list.empty:
+                            pilih_pusat_bawah_bk = st.multiselect(f"Pilih Pusat-Pusat Di Bawah {pilih_bk_tempat} (Tick semua pusat di bawah bilik kebal ini)", df_pusat_ppd_list["NO_PUSAT"].tolist() if "NO_PUSAT" in df_pusat_ppd_list.columns else [], format_func=lambda x: f"{x} - {df_pusat_ppd_list[df_pusat_ppd_list['NO_PUSAT']==x]['NAMA_PUSAT'].values[0][:25] if not df_pusat_ppd_list[df_pusat_ppd_list['NO_PUSAT']==x].empty else x}", key="pilih_pusat_bawah_bk_v8")
+                            if pilih_pusat_bawah_bk:
+                                st.success(f"✅ {len(pilih_pusat_bawah_bk)} pusat dipilih di bawah {pilih_bk_tempat}: {', '.join(pilih_pusat_bawah_bk)}")
+                                # Simpan ke session untuk guna di step 3
+                                st.session_state[f"pusat_bawah_{pilih_bk_tempat}"] = pilih_pusat_bawah_bk
+                        else:
+                            pilih_pusat_bawah_bk = []
+                            st.warning("Tiada pusat dalam PPD ini")
+                        
+                        # Load saved pusat if exists
+                        saved_pusat_bawah = st.session_state.get(f"pusat_bawah_{pilih_bk_tempat}", pilih_pusat_bawah_bk if 'pilih_pusat_bawah_bk' in locals() else [])
+                        
+                        if not saved_pusat_bawah:
+                            st.warning("⚠️ Sila pilih pusat di bawah bilik kebal dulu di STEP 2")
+                            st.stop()
+                        
+                        st.markdown("---")
+                        st.markdown("#### STEP 3: Pilih Penyelia Kawasan & Agihkan Pusat Jagaan")
+                        st.caption(f"Pusat yang boleh diagihkan hanya dari senarai yang dipilih untuk {pilih_bk_tempat} tadi ({len(saved_pusat_bawah)} pusat), bukan semua pusat PPD. Agihkan supaya sorang Penyelia tidak pegang semua.")
+                        
+                        def get_col2(df, *cands):
+                            # V29: case-insensitive search
+                            cols_lower = {str(c).lower(): c for c in df.columns}
+                            for cand in cands:
+                                if cand in df.columns:
+                                    return cand
+                                if cand.lower() in cols_lower:
+                                    return cols_lower[cand.lower()]
+                            return None
+                        
+                        c_nama = get_col2(df_penyelia, "NAMA_GURU","nama_guru")
+                        c_ic = get_col2(df_penyelia, "IC_GURU","ic_guru")
+                        c_sek = get_col2(df_penyelia, "KOD_SEKOLAH_ASAL","kod_sekolah_asal")
+                        c_sek_nama = get_col2(df_penyelia, "NAMA_SEKOLAH_ASAL","nama_sekolah_asal")
+                        c_tel = get_col2(df_penyelia, "TELEFON_GURU","telefon_guru")
+                        c_pusat = get_col2(df_penyelia, "KOD_PUSAT","kod_pusat")
+                        
+                        cols_disp = [c for c in [c_nama,c_ic,c_sek,c_sek_nama,c_tel,c_pusat] if c]
+                        if cols_disp:
+                            df_disp = df_penyelia[cols_disp].copy()
+                            rename_map = {}
+                            if c_nama:
+                                rename_map[c_nama] = "NAMA PENYELIA"
+                            if c_ic:
+                                rename_map[c_ic] = "IC"
+                            if c_sek:
+                                rename_map[c_sek] = "KOD SEKOLAH ASAL"
+                            if c_sek_nama and c_sek_nama != c_sek:
+                                rename_map[c_sek_nama] = "NAMA SEKOLAH ASAL"
+                            if c_tel:
+                                rename_map[c_tel] = "NO TELEFON"
+                            if c_pusat:
+                                rename_map[c_pusat] = "BILIK KEBAL / PUSAT"
+                            df_disp = df_disp.rename(columns=rename_map)
+                            st.dataframe(df_disp.head(100), use_container_width=True, hide_index=True)
+                        else:
+                            st.dataframe(df_penyelia.head(100), use_container_width=True, hide_index=True)
+                        
+                        id_col = "id" if "id" in df_penyelia.columns else None
+                        if id_col:
+                            id_list = df_penyelia[id_col].tolist()
+                            def format_penyelia(x):
+                                try:
+                                    row = df_penyelia[df_penyelia[id_col].astype(str) == str(x)]
+                                    if row.empty:
+                                        row = df_penyelia[df_penyelia[id_col] == x]
+                                    if not row.empty:
+                                        nama = str(row.iloc[0].get(c_nama,"") if c_nama else "")[:30]
+                                        sek = str(row.iloc[0].get(c_sek,"") if c_sek else "")[:15]
+                                        tel = str(row.iloc[0].get(c_tel,"") if c_tel else "")[:15]
+                                        return f"{nama} | {sek} | {tel} (ID:{x})"
+                                    else:
+                                        return f"ID:{x}"
+                                except:
+                                    return f"ID:{x}"
+                            
+                            pilih_penyelia_bk = st.multiselect("Pilih Penyelia Kawasan (akan keluar nama + sekolah + telefon)", id_list, format_func=format_penyelia, key="pilih_penyelia_bk_v8")
+                            
+                            if pilih_penyelia_bk:
+                                st.markdown(f"##### Agihkan Pusat Jagaan Untuk {len(pilih_penyelia_bk)} Penyelia Terpilih")
+                                st.caption(f"Setiap Penyelia hanya boleh pilih pusat dari {len(saved_pusat_bawah)} pusat yang dipilih untuk {pilih_bk_tempat} tadi. Contoh: Penyelia 1 jaga 6 pusat, Penyelia 2 jaga 6 pusat lain.")
+                                
+                                # For each selected penyelia, show multiselect for pusat jagaan (only from saved list)
+                                penyelia_pusat_map = {}
+                                for pid in pilih_penyelia_bk:
+                                    row = df_penyelia[df_penyelia[id_col].astype(str) == str(pid)]
+                                    if row.empty:
+                                        row = df_penyelia[df_penyelia[id_col] == pid]
+                                    if not row.empty:
+                                        nama_peny = str(row.iloc[0].get(c_nama,"") if c_nama else f"ID:{pid}")[:30]
+                                        sek_peny = str(row.iloc[0].get(c_sek,"") if c_sek else "")
+                                        tel_peny = str(row.iloc[0].get(c_tel,"") if c_tel else "")
+                                    else:
+                                        nama_peny = f"ID:{pid}"
+                                        sek_peny = ""
+                                        tel_peny = ""
+                                    
+                                    st.markdown(f"**{nama_peny} - {sek_peny} - {tel_peny}**")
+                                    # Multiselect pusat untuk penyelia ini sahaja, option dari saved_pusat_bawah
+                                    selected_pusat_for_this = st.multiselect(f"Pilih pusat jagaan untuk {nama_peny} (dari {len(saved_pusat_bawah)} pusat di bawah {pilih_bk_tempat})", saved_pusat_bawah, format_func=lambda x: f"{x} - {df_pusat_ppd_list[df_pusat_ppd_list['NO_PUSAT']==x]['NAMA_PUSAT'].values[0][:25] if not df_pusat_ppd_list[df_pusat_ppd_list['NO_PUSAT']==x].empty else x}", key=f"pusat_untuk_{pid}_v8")
+                                    penyelia_pusat_map[pid] = selected_pusat_for_this
+                                    if selected_pusat_for_this:
+                                        st.caption(f"→ {nama_peny} akan jaga {len(selected_pusat_for_this)} pusat: {', '.join(selected_pusat_for_this)}")
+                                    st.markdown("---")
+                                
+                                # Preview before save
+                                if any(penyelia_pusat_map.values()):
+                                    st.markdown("**Preview Penempatan (dengan Sekolah Asal & Telefon):**")
+                                    preview_rows = []
+                                    for pid, pusat_list in penyelia_pusat_map.items():
+                                        if not pusat_list:
+                                            continue
+                                        row = df_penyelia[df_penyelia[id_col].astype(str) == str(pid)]
+                                        if not row.empty:
+                                            r = row.iloc[0]
+                                            preview_rows.append({
+                                                "NAMA PENYELIA": r.get(c_nama,"") if c_nama else "",
+                                                "IC": r.get(c_ic,"") if c_ic else "",
+                                                "SEKOLAH ASAL": r.get(c_sek,"") if c_sek else "",
+                                                "NAMA SEKOLAH ASAL": r.get(c_sek_nama,"") if c_sek_nama else "",
+                                                "NO TELEFON": r.get(c_tel,"") if c_tel else "",
+                                                "BILIK KEBAL": pilih_bk_tempat,
+                                                "PUSAT JAGAAN": ", ".join(pusat_list),
+                                                "BIL PUSAT": len(pusat_list)
+                                            })
+                                    if preview_rows:
+                                        df_preview = pd.DataFrame(preview_rows)
+                                        st.dataframe(df_preview, use_container_width=True, hide_index=True)
+                                
+                                # Save button
+                                if st.button(f"✅ Lantik & Simpan {len(pilih_penyelia_bk)} Penyelia ke {pilih_bk_tempat} dengan Pusat Jagaan", type="primary", use_container_width=True, key="btn_tempat_penyelia_bk_v8"):
+                                    try:
+                                        for pid, pusat_list in penyelia_pusat_map.items():
+                                            if not pusat_list:
+                                                continue
+                                            pusat_str = ",".join(pusat_list)
+                                            existing_row = df_penyelia[df_penyelia[id_col].astype(str) == str(pid)]
+                                            existing_data = {}
+                                            if not existing_row.empty:
+                                                ed = existing_row.iloc[0].get("data")
+                                                if isinstance(ed, dict):
+                                                    existing_data = ed
+                                                elif isinstance(ed, str):
+                                                    try:
+                                                        existing_data = json.loads(ed)
+                                                    except:
+                                                        existing_data = {}
+                                            existing_data["kod_bilik_kebal"] = pilih_bk_tempat
+                                            existing_data["pusat_jagaan"] = pusat_list
+                                            existing_data["pusat_jagaan_str"] = pusat_str
+                                            existing_data["pusat_bawah_bilik_kebal"] = saved_pusat_bawah
+                                            
+                                            # V33 FIX: kod_bilik_kebal = CB01 (bilik kebal), kod_pusat = pusat jagaan (BA021, BA053) untuk Penyelia Kawasan
+                                            pusat_jagaan_str = ",".join(pusat_list) if isinstance(pusat_list, list) else str(pusat_list)
+                                            existing_data["kod_bilik_kebal"] = pilih_bk_tempat
+                                            existing_data["kod_bilik_kebal_explicit"] = pilih_bk_tempat
+                                            existing_data["pusat_jagaan"] = pusat_list
+                                            existing_data["pusat_jagaan_str"] = pusat_jagaan_str
+                                            existing_data["pusat_bawah_bilik_kebal"] = saved_pusat_bawah
+                                            
+                                            # V33: kod_pusat = pusat jagaan sebenar, kod_bilik_kebal = bilik kebal
+                                            # Contoh: kod_bilik_kebal=CB01, kod_pusat=BA021, BA053
+                                            payloads_try = [
+                                                {"kod_bilik_kebal": pilih_bk_tempat, "kod_pusat": pusat_jagaan_str, "status": "DITEMPATKAN BILIK KEBAL", "data": existing_data},
+                                                {"kod_bilik_kebal": pilih_bk_tempat, "kod_pusat": pusat_jagaan_str, "status": "DITEMPATKAN BILIK KEBAL"},
+                                                {"kod_bilik_kebal": pilih_bk_tempat, "status": "DITEMPATKAN BILIK KEBAL", "data": existing_data},
+                                                {"kod_bilik_kebal": pilih_bk_tempat, "status": "DITEMPATKAN BILIK KEBAL"},
+                                                {"kod_pusat": pusat_jagaan_str, "status": "DITEMPATKAN BILIK KEBAL", "data": existing_data},
+                                            ]
+                                            last_err = None
+                                            success = False
+                                            for payload in payloads_try:
+                                                try:
+                                                    supa.table("cadangan_sup").update(payload).eq("id", pid).execute()
+                                                    success = True
+                                                    break
+                                                except Exception as e:
+                                                    last_err = e
+                                                    continue
+                                            if not success and last_err:
+                                                raise last_err
+                                        st.success(f"✅ {len([v for v in penyelia_pusat_map.values() if v])} Penyelia berjaya ditempatkan ke {pilih_bk_tempat}")
+                                        st.balloons()
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Error: {e}")
+                            else:
+                                st.info("Pilih Penyelia Kawasan di atas")
+                        else:
+                            st.warning("Tiada id column")
+                    
+                    st.markdown("---")
+                    st.markdown("### 📊 Ringkasan Penempatan Penyelia ke Bilik Kebal (Column Berasingan Ikut Bilangan Penyelia)")
+                    st.caption("Setiap Penyelia ada column sendiri: NAMA, IC, SEKOLAH ASAL, TELEFON, PUSAT JAGAAN. Kalau ada 2 penyelia, akan ada 2 set column. Kalau 6, akan ada 6 set.")
+                    # V27 FIX: Ringkasan penempatan - 1 baris per Penyelia, bukan semua dalam 1 baris
+                    ringkas_bk = []
+                    df_cad_all_bk2 = get_cadangan_df(kod_ppd=kod_ppd)
+                    for _, bk_row in df_bk.iterrows():
+                        kod_bk_r = bk_row.get("kod_bilik_kebal","") or bk_row.get("KOD_BILIK_KEBAL","")
+                        nama_bk_r = str(bk_row.get("nama_bilik_kebal",""))[:30]
+                        alamat_bk_r = str(bk_row.get("alamat",""))[:40]
+                        penyelia_assigned = []
+                        if not df_cad_all_bk2.empty:
+                            for _, c in df_cad_all_bk2.iterrows():
+                                p = str(c.get("kod_bilik_kebal") or c.get("kod_pusat") or c.get("KOD_PUSAT") or c.get("KOD_BILIK_KEBAL") or "").upper()
+                                if p == kod_bk_r.upper():
+                                    jaw = str(c.get("JAWATAN_CADANGAN") or c.get("jawatan_cadangan") or "").upper()
+                                    if "PENYELIA" in jaw:
+                                        nama_g = str(c.get("NAMA_GURU") or c.get("nama_guru") or "")
+                                        ic_g = str(c.get("IC_GURU") or c.get("ic_guru") or "")
+                                        sek_g = str(c.get("KOD_SEKOLAH_ASAL") or c.get("kod_sekolah_asal") or "")
+                                        sek_nama_g = str(c.get("NAMA_SEKOLAH_ASAL") or c.get("nama_sekolah_asal") or "")[:30]
+                                        tel_g = str(c.get("TELEFON_GURU") or c.get("telefon_guru") or "")
+                                        d = c.get("data") if isinstance(c.get("data"), dict) else {}
+                                        if isinstance(d, str):
+                                            try:
+                                                d = json.loads(d)
+                                            except:
+                                                d = {}
+                                        # V34 FIX: Baca pusat jagaan dari data JSON, fallback ke kod_pusat jika data kosong
+                                        pusat_j = d.get("pusat_jagaan_str") or d.get("pusat_jagaan") or ""
+                                        if isinstance(pusat_j, list):
+                                            pusat_j = ",".join(pusat_j)
+                                        # Jika pusat_j masih kosong, cuba baca dari kod_pusat column (untuk data baru V33)
+                                        if not pusat_j or pusat_j == "-" or pusat_j.strip() == "":
+                                            raw_kod_pusat = str(c.get("kod_pusat") or c.get("KOD_PUSAT") or "").strip()
+                                            # Jika kod_pusat bukan bilik kebal (CB, BK, BILIK), anggap itu pusat jagaan
+                                            if raw_kod_pusat and not any(x in raw_kod_pusat.upper() for x in ["CB", "BK-", "BILIK"]) or "," in raw_kod_pusat:
+                                                pusat_j = raw_kod_pusat
+                                            # Jika kod_pusat adalah CB01 tapi data ada pusat_bawah, guna pusat_bawah sebagai fallback lama
+                                            elif not pusat_j:
+                                                pusat_j = d.get("pusat_bawah_bilik_kebal") or ""
+                                                if isinstance(pusat_j, list):
+                                                    pusat_j = ",".join(pusat_j)
+                                        
+                                        pusat_bawah = d.get("pusat_bawah_bilik_kebal") or d.get("pusat_bawah") or ""
+                                        if isinstance(pusat_bawah, list):
+                                            pusat_bawah = ",".join(pusat_bawah)
+                                        # Jika pusat_bawah kosong, fallback ke semua pusat bawah bilik kebal dari kod_bilik_kebal
+                                        if not pusat_bawah:
+                                            pusat_bawah = d.get("kod_bilik_kebal") or c.get("kod_bilik_kebal") or ""
+                                        penyelia_assigned.append({
+                                            "nama": nama_g,
+                                            "ic": ic_g,
+                                            "sekolah": sek_g,
+                                            "sekolah_nama": sek_nama_g,
+                                            "telefon": tel_g,
+                                            "pusat_jagaan": pusat_j,
+                                            "pusat_bawah": pusat_bawah,
+                                            "id": c.get("id")
+                                        })
+                        
+                        # V27: Buat 1 baris per penyelia, bukan gabung dalam 1 baris
+                        if penyelia_assigned:
+                            for idx, pen in enumerate(penyelia_assigned, 1):
+                                row_dict = {
+                                    "BIL": idx,
+                                    "KOD BILIK KEBAL": kod_bk_r,
+                                    "NAMA BILIK KEBAL": nama_bk_r,
+                                    "ALAMAT": alamat_bk_r,
+                                    "PENYELIA KE": f"{idx} dari {len(penyelia_assigned)}",
+                                    "NAMA PENYELIA": pen["nama"],
+                                    "IC PENYELIA": pen["ic"],
+                                    "SEKOLAH ASAL": pen["sekolah"],
+                                    "NAMA SEK ASAL": pen["sekolah_nama"],
+                                    "TELEFON": pen["telefon"],
+                                    "PUSAT JAGAAN (Di bawah Penyelia Ini)": pen["pusat_jagaan"],
+                                    "SEMUA PUSAT DI BAWAH BILIK KEBAL": pen["pusat_bawah"],
+                                    "BIL PUSAT JAGAAN": len(pen["pusat_jagaan"].split(",")) if pen["pusat_jagaan"] and pen["pusat_jagaan"] != "-" else 0,
+                                    "ID": pen["id"]
+                                }
+                                ringkas_bk.append(row_dict)
+                        else:
+                            # Jika kosong, buat 1 baris kosong
+                            ringkas_bk.append({
+                                "BIL": 0,
+                                "KOD BILIK KEBAL": kod_bk_r,
+                                "NAMA BILIK KEBAL": nama_bk_r,
+                                "ALAMAT": alamat_bk_r,
+                                "PENYELIA KE": "0",
+                                "NAMA PENYELIA": "-",
+                                "IC PENYELIA": "-",
+                                "SEKOLAH ASAL": "-",
+                                "NAMA SEK ASAL": "-",
+                                "TELEFON": "-",
+                                "PUSAT JAGAAN (Di bawah Penyelia Ini)": "-",
+                                "SEMUA PUSAT DI BAWAH BILIK KEBAL": "-",
+                                "BIL PUSAT JAGAAN": 0,
+                                "ID": "-"
+                            })
+                    
+                    if ringkas_bk:
+                        df_ringkas_bk = pd.DataFrame(ringkas_bk)
+                        df_ringkas_bk = df_ringkas_bk.fillna("-")
+                        # Sort by bilik kebal then penyelia ke
+                        try:
+                            df_ringkas_bk = df_ringkas_bk.sort_values(by=["KOD BILIK KEBAL", "BIL"])
+                        except:
+                            pass
+                        st.dataframe(df_ringkas_bk, use_container_width=True, hide_index=True)
+                        # Highlight if more than 1 penyelia per bilik kebal
+                        try:
+                            bil_bk_counts = df_ringkas_bk[df_ringkas_bk["NAMA PENYELIA"] != "-"].groupby("KOD BILIK KEBAL").size()
+                            for bk_code, cnt in bil_bk_counts.items():
+                                if cnt > 1:
+                                    st.info(f"📌 Bilik Kebal {bk_code} ada {cnt} Penyelia Kawasan - setiap penyelia ada baris sendiri di atas")
+                        except:
+                            pass
+                        st.download_button("📥 Export Ringkasan Bilik Kebal (1 Baris = 1 Penyelia)", to_excel(df_ringkas_bk), file_name=f"ringkasan_bilik_kebal_{kod_ppd}_1baris_1penyelia_{datetime.date.today()}.xlsx", use_container_width=True)
+                    else:
+                        st.info("Belum ada ringkasan")
+                    
+                    st.markdown("---")
+                    st.markdown("### 🗑️ Batal Penempatan Penyelia Kawasan")
+                    st.caption("Pilih bilik kebal, kemudian batalkan penempatan penyelia di bilik kebal tersebut. Data akan kembali ke status DICADANGKAN dan pusat jagaan akan dipadam.")
+                    if not df_bk.empty:
+                        pilih_bk_batal = st.selectbox("Pilih Bilik Kebal untuk Batal Penempatan", df_bk["kod_bilik_kebal"].tolist() if "kod_bilik_kebal" in df_bk.columns else [], key="pilih_bk_batal_v8")
+                        if st.button(f"🗑️ Batal Semua Penempatan Penyelia di {pilih_bk_batal}", type="secondary", use_container_width=True, key="btn_batal_penyelia"):
+                            try:
+                                df_cad_batal = get_cadangan_df(kod_ppd=kod_ppd)
+                                count_batal = 0
+                                for _, c in df_cad_batal.iterrows():
+                                    p = str(c.get("kod_bilik_kebal") or c.get("kod_pusat") or c.get("KOD_PUSAT") or c.get("KOD_BILIK_KEBAL") or "").upper()
+                                    if p == pilih_bk_batal.upper():
+                                        jaw = str(c.get("JAWATAN_CADANGAN") or c.get("jawatan_cadangan") or "").upper()
+                                        if "PENYELIA" in jaw:
+                                            # Reset balik ke pool cadangan - kosongkan bilik kebal & pusat jagaan
+                                            supa.table("cadangan_sup").update({"kod_pusat": None, "status": "DICADANGKAN SEMULA - BATAL BILIK KEBAL", "no_surat": None, "data": {}}).eq("id", c.get("id")).execute()
+                                            count_batal += 1
+                                st.success(f"✅ {count_batal} penempatan di {pilih_bk_batal} telah dibatalkan. Cadangan kembali ke PPD > Cadangan SUP & SUP > Cadangan Lantikan dengan status DICADANGKAN")
+                                # Clear session pusat bawah
+                                if f"pusat_bawah_{pilih_bk_batal}" in st.session_state:
+                                    del st.session_state[f"pusat_bawah_{pilih_bk_batal}"]
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Error batal: {e}")
+                        
+                        # Batal individu
+                        st.markdown("**Batal Individu Penyelia:**")
+                        df_cad_batal_ind = get_cadangan_df(kod_ppd=kod_ppd)
+                        df_batal_list = []
+                        for _, c in df_cad_batal_ind.iterrows():
+                            p = str(c.get("kod_bilik_kebal") or c.get("kod_pusat") or c.get("KOD_PUSAT") or c.get("KOD_BILIK_KEBAL") or "").upper()
+                            if p == pilih_bk_batal.upper():
+                                jaw = str(c.get("JAWATAN_CADANGAN") or c.get("jawatan_cadangan") or "").upper()
+                                if "PENYELIA" in jaw:
+                                    df_batal_list.append(c)
+                        if df_batal_list:
+                            df_batal_df = pd.DataFrame(df_batal_list)
+                            id_col_batal = "id" if "id" in df_batal_df.columns else None
+                            if id_col_batal:
+                                def fmt_batal(x):
+                                    row = df_batal_df[df_batal_df[id_col_batal].astype(str)==str(x)]
+                                    if not row.empty:
+                                        return f"{row.iloc[0].get('NAMA_GURU','')} - {row.iloc[0].get('KOD_SEKOLAH_ASAL','')}"
+                                    return str(x)
+                                pilih_batal_ind = st.multiselect("Pilih Penyelia untuk Batal", df_batal_df[id_col_batal].tolist(), format_func=fmt_batal, key="batal_ind_v8")
+                                if pilih_batal_ind and st.button(f"🗑️ Batal {len(pilih_batal_ind)} Penyelia Terpilih", use_container_width=True, key="btn_batal_ind"):
+                                    try:
+                                        for pid in pilih_batal_ind:
+                                            supa.table("cadangan_sup").update({"kod_pusat": None, "status": "DICADANGKAN SEMULA - BATAL BILIK KEBAL", "no_surat": None, "data": {}}).eq("id", pid).execute()
+                                        st.success(f"✅ Berjaya batal {len(pilih_batal_ind)} penyelia. Mereka kembali ke pool cadangan - boleh lihat di PPD > Cadangan SUP")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(str(e))
+                            else:
+                                st.info("Tiada penyelia untuk dibatalkan di bilik kebal ini")
+                        else:
+                            st.info(f"Tiada penyelia ditempatkan di {pilih_bk_batal}")
+
+
+
+
+            with tab_surat:
+                st.markdown(f"### 📄 Jana Surat Lantikan Penyelia Kawasan - PPD {kod_ppd}")
+                st.caption("Surat akan dijana dengan Nama, IC, Sekolah Asal, Bilik Kebal, Pusat Jagaan. Boleh download HTML dan hantar ke sekolah asal. SUP akan nampak di Petugas di Sekolah Saya.")
+                
+                # Load bilik kebal and penyelia assigned
+                df_cad_all_surat = get_cadangan_df(kod_ppd=kod_ppd)
+                if df_cad_all_surat.empty:
+                    st.warning("Belum ada cadangan")
+                else:
+                    # Filter penyelia yang sudah ditempatkan di bilik kebal
+                    df_surat = []
+                    seen_ids_surat = set()
+                    for _, c in df_cad_all_surat.iterrows():
+                        p = str(c.get("kod_bilik_kebal") or c.get("kod_pusat") or c.get("KOD_PUSAT") or c.get("KOD_BILIK_KEBAL") or "").upper()
+                        jaw = str(c.get("JAWATAN_CADANGAN") or c.get("jawatan_cadangan") or "").upper()
+                        c_id = str(c.get("id") or c.get("IC_GURU") or c.get("ic_guru") or "") + "_" + str(c.get("KOD_SEKOLAH_ASAL") or "")
+                        # Check if already added
+                        if c_id in seen_ids_surat:
+                            continue
+                        if "PENYELIA" in jaw and p:
+                            # Check if p is bilik kebal
+                            is_bk = False
+                            try:
+                                for _, bk in df_bk.iterrows():
+                                    if str(bk.get("kod_bilik_kebal","")).upper() == p:
+                                        is_bk = True
+                                        break
+                            except:
+                                pass
+                            if is_bk or "BK-" in p or "CB" in p or p.startswith(kod_ppd+"-BK") or "BILIK" in p:
+                                df_surat.append(c)
+                                seen_ids_surat.add(c_id)
+                                continue
+                        # Also include if status DITEMPATKAN BILIK KEBAL
+                        if str(c.get("status") or c.get("STATUS") or "").upper() == "DITEMPATKAN BILIK KEBAL":
+                            if c_id not in seen_ids_surat:
+                                df_surat.append(c)
+                                seen_ids_surat.add(c_id)
+                    
+                    df_surat = pd.DataFrame(df_surat) if df_surat else pd.DataFrame()
+                    
+                    if df_surat.empty:
+                        st.info("Belum ada Penyelia Kawasan yang ditempatkan ke Bilik Kebal. Sila tempatkan dulu di tab Tempatkan Penyelia Kawasan.")
+                    else:
+                        st.success(f"Ada {len(df_surat)} Penyelia Kawasan telah ditempatkan ke Bilik Kebal dan sedia untuk jana surat")
+                        
+                        # Select penyelia to generate surat
+                        def get_col_s(df, *cands):
+                            for cand in cands:
+                                if cand in df.columns:
+                                    return cand
+                            return None
+                        
+                        c_nama_s = get_col_s(df_surat, "NAMA_GURU","nama_guru")
+                        c_ic_s = get_col_s(df_surat, "IC_GURU","ic_guru")
+                        c_sek_s = get_col_s(df_surat, "KOD_SEKOLAH_ASAL","kod_sekolah_asal")
+                        c_sek_nama_s = get_col_s(df_surat, "NAMA_SEKOLAH_ASAL","nama_sekolah_asal")
+                        c_tel_s = get_col_s(df_surat, "TELEFON_GURU","telefon_guru","TELEFON","telefon")
+                        c_pusat_s = get_col_s(df_surat, "KOD_PUSAT","kod_pusat")
+                        c_id_s = "id" if "id" in df_surat.columns else None
+                        
+                        # Display
+                        cols_s = [c for c in [c_nama_s,c_ic_s,c_sek_s,c_sek_nama_s,c_tel_s,c_pusat_s] if c]
+                        if cols_s:
+                            st.dataframe(df_surat[cols_s].head(50), use_container_width=True, hide_index=True)
+                        
+                        # Pilih penyelia
+                        if c_id_s:
+                            id_list_s = df_surat[c_id_s].tolist()
+                            def fmt_surat(x):
+                                row = df_surat[df_surat[c_id_s].astype(str)==str(x)]
+                                if row.empty:
+                                    row = df_surat[df_surat[c_id_s]==x]
+                                if not row.empty:
+                                    nama = str(row.iloc[0].get(c_nama_s,"") if c_nama_s else "")[:25]
+                                    bk = str(row.iloc[0].get(c_pusat_s,"") if c_pusat_s else "")[:15]
+                                    return f"{nama} - {bk} (ID:{x})"
+                                return f"ID:{x}"
+                            
+                            pilih_surat = st.multiselect("Pilih Penyelia Kawasan untuk Jana Surat", id_list_s, format_func=fmt_surat, key="pilih_surat_penyelia")
+                            
+                            # No surat settings
+                            col_no1, col_no2, col_no3 = st.columns(3)
+                            with col_no1:
+                                prefix_surat = st.text_input("Prefix No Surat", value=f"PPD{kod_ppd}/SPM/PK/2026/", key="prefix_surat_pk")
+                            with col_no2:
+                                no_mula = st.number_input("No Mula", min_value=1, value=1, key="no_mula_pk")
+                            with col_no3:
+                                tarikh_surat = st.date_input("Tarikh Surat", value=datetime.date.today(), key="tarikh_surat_pk")
+                            
+                            if pilih_surat and st.button(f"📄 Jana {len(pilih_surat)} Surat Penyelia Kawasan", type="primary", use_container_width=True, key="btn_jana_surat_pk"):
+                                try:
+                                    tarikh_str = tarikh_surat.strftime("%d %B %Y")
+                                    surat_html_all = ""
+                                    surat_list_data = []
+                                    current_no = no_mula
+                                    
+                                    for pid in pilih_surat:
+                                        row = df_surat[df_surat[c_id_s].astype(str)==str(pid)]
+                                        if row.empty:
+                                            row = df_surat[df_surat[c_id_s]==pid]
+                                        if row.empty:
+                                            continue
+                                        r = row.iloc[0]
+                                        nama = str(r.get(c_nama_s,"") if c_nama_s else "")
+                                        ic = str(r.get(c_ic_s,"") if c_ic_s else "")
+                                        sek = str(r.get(c_sek_s,"") if c_sek_s else "")
+                                        nama_sek = str(r.get(c_sek_nama_s,"") if c_sek_nama_s else sek)
+                                        tel = str(r.get(c_tel_s,"") if c_tel_s else "")
+                                        # V35 FIX: kod_bk dari column kod_bilik_kebal, bukan kod_pusat
+                                        kod_bk = str(r.get("kod_bilik_kebal") or r.get("KOD_BILIK_KEBAL") or r.get(c_pusat_s,"") if c_pusat_s else "").strip()
+                                        # Jika kod_bk masih nampak macam pusat jagaan (BA021), cuba cari dalam data
+                                        d = r.get("data") if isinstance(r.get("data"), dict) else {}
+                                        if isinstance(d, str):
+                                            try:
+                                                d = json.loads(d)
+                                            except:
+                                                d = {}
+                                        # Jika kod_bk adalah BA... bukan CB/BK, ambil dari data
+                                        if kod_bk and not any(x in kod_bk.upper() for x in ["CB", "BK-", "BK", "BILIK"]) or "," in kod_bk:
+                                            # kod_bk sekarang sebenarnya pusat jagaan, jadi cari bilik kebal sebenar dalam data
+                                            real_bk = d.get("kod_bilik_kebal") or d.get("kod_bilik_kebal_explicit") or ""
+                                            if real_bk:
+                                                kod_bk = str(real_bk).strip()
+                                        
+                                        # V36 FIX: CB01 SMK RAJA ZARINA - ensure lookup works
+                                        bk_row = pd.DataFrame()
+                                        if not df_bk.empty and "kod_bilik_kebal" in df_bk.columns:
+                                            try:
+                                                mask = df_bk["kod_bilik_kebal"].astype(str).str.upper().str.strip() == kod_bk.upper().strip()
+                                                bk_row = df_bk[mask]
+                                            except:
+                                                pass
+                                        if not bk_row.empty:
+                                            nama_bk = str(bk_row.iloc[0].get("nama_bilik_kebal","")).strip()
+                                            alamat_bk = str(bk_row.iloc[0].get("alamat","")).strip()
+                                            # If CB01 should be SMK RAJA ZARINA, ensure name
+                                            if kod_bk.upper() == "CB01" and "RAJA ZARINA" not in nama_bk.upper():
+                                                # Keep existing name but note CB01 is SMK RAJA ZARINA
+                                                if not nama_bk or nama_bk == kod_bk:
+                                                    nama_bk = "SMK RAJA ZARINA - BILIK KEBAL CB01"
+                                        else:
+                                            # Fallback: Try from data JSON or hardcode CB01
+                                            nama_bk = str(d.get("nama_bilik_kebal","") or d.get("nama_bk","") or "").strip()
+                                            alamat_bk = str(d.get("alamat_bilik_kebal","") or d.get("alamat","") or "").strip()
+                                            if not nama_bk or nama_bk == kod_bk:
+                                                if kod_bk.upper() == "CB01":
+                                                    nama_bk = "SMK RAJA ZARINA"
+                                                    alamat_bk = alamat_bk or "SMK RAJA ZARINA, KLANG"
+                                                else:
+                                                    nama_bk = kod_bk
+                                            # If still CB01, ensure SMK RAJA ZARINA
+                                            if kod_bk.upper() == "CB01" and "RAJA ZARINA" not in nama_bk.upper():
+                                                if len(nama_bk) < 5:
+                                                    nama_bk = "SMK RAJA ZARINA"
+                                        
+                                        # V35 FIX: Get pusat jagaan - dari kod_pusat ATAU data JSON
+                                        pusat_jagaan = d.get("pusat_jagaan") or d.get("pusat_jagaan_str") or []
+                                        if not pusat_jagaan:
+                                            # Fallback: kod_pusat sekarang adalah pusat jagaan (BA021, BA053) untuk V33+
+                                            raw_kod_pusat = str(r.get("kod_pusat") or r.get("KOD_PUSAT") or r.get(c_pusat_s,"") if c_pusat_s else "").strip()
+                                            if raw_kod_pusat and raw_kod_pusat.upper() != kod_bk.upper():
+                                                pusat_jagaan = raw_kod_pusat
+                                        if isinstance(pusat_jagaan, str):
+                                            pusat_jagaan = [p.strip() for p in pusat_jagaan.split(",") if p.strip()]
+                                        if not isinstance(pusat_jagaan, list):
+                                            pusat_jagaan = [str(pusat_jagaan)] if pusat_jagaan else []
+                                        
+                                        no_surat = f"{prefix_surat}{current_no:04d}"
+                                        current_no += 1
+                                        
+                                        html_surat = generate_surat_penyelia_kawasan_html(
+                                            nama=nama,
+                                            ic=ic,
+                                            sek_asal=sek,
+                                            nama_sek_asal=nama_sek,
+                                            telefon=tel,
+                                            kod_bilik_kebal=kod_bk,
+                                            nama_bilik_kebal=nama_bk,
+                                            alamat_bilik_kebal=alamat_bk,
+                                            pusat_jagaan_list=pusat_jagaan,
+                                            no_surat=no_surat,
+                                            kod_ppd=kod_ppd,
+                                            ppd_name=PPD_MAP.get(kod_ppd,""),
+                                            tarikh=tarikh_str
+                                        )
+                                        surat_html_all += html_surat + "\n"
+                                        surat_list_data.append({
+                                            "id": pid,
+                                            "nama": nama,
+                                            "ic": ic,
+                                            "sekolah_asal": sek,
+                                            "bilik_kebal": kod_bk,
+                                            "no_surat": no_surat,
+                                            "html": html_surat
+                                        })
+                                    
+                                    # Save to session for download and hantar
+                                    st.session_state[f"surat_pk_html_{kod_ppd}"] = surat_html_all
+                                    st.session_state[f"surat_pk_list_{kod_ppd}"] = surat_list_data
+                                    
+                                    st.success(f"✅ Berjaya jana {len(surat_list_data)} surat Penyelia Kawasan")
+                                    st.components.v1.html(surat_html_all[:10000], height=600, scrolling=True)
+                                    
+                                except Exception as e:
+                                    st.error(f"Error jana surat: {e}")
+                                    import traceback
+                                    st.error(traceback.format_exc())
+                            
+                            # Show generated surat if exists
+                            if f"surat_pk_html_{kod_ppd}" in st.session_state:
+                                st.markdown("---")
+                                st.markdown("### 📄 Surat Telah Dijana")
+                                html_all = st.session_state[f"surat_pk_html_{kod_ppd}"]
+                                list_data = st.session_state.get(f"surat_pk_list_{kod_ppd}", [])
+                                
+                                st.components.v1.html(html_all[:12000], height=700, scrolling=True)
+                                
+                                col_dl1, col_dl2, col_dl3 = st.columns(3)
+                                with col_dl1:
+                                    st.download_button("📥 Download Semua Surat (HTML)", data=html_all.encode('utf-8'), file_name=f"Surat_Penyelia_Kawasan_{kod_ppd}_{datetime.date.today()}.html", mime="text/html", use_container_width=True, key="dl_all_surat_pk")
+                                with col_dl2:
+                                    # Excel list
+                                    df_dl = pd.DataFrame([{"NAMA": s["nama"], "IC": s["ic"], "SEKOLAH ASAL": s["sekolah_asal"], "BILIK KEBAL": s["bilik_kebal"], "NO SURAT": s["no_surat"]} for s in list_data])
+                                    st.download_button("📥 Download Senarai (Excel)", to_excel(df_dl), file_name=f"Senarai_Surat_PK_{kod_ppd}.xlsx", use_container_width=True, key="dl_excel_pk")
+                                with col_dl3:
+                                    if st.button(f"📤 Hantar Surat ke Sekolah Asal (SUP akan nampak di Petugas di Sekolah Saya)", type="primary", use_container_width=True, key="btn_hantar_surat_pk"):
+                                        try:
+                                            berjaya = 0
+                                            for s in list_data:
+                                                supa.table("cadangan_sup").update({"status": "SURAT PK DIHANTAR", "no_surat": s["no_surat"]}).eq("id", s["id"]).execute()
+                                                berjaya += 1
+                                            st.success(f"✅ {berjaya} surat dihantar ke sekolah asal! SUP boleh lihat di menu Petugas di Sekolah Saya")
+                                            st.balloons()
+                                            st.info("Surat telah dihantar - guru di sekolah asal boleh download surat di SUP > Surat Lantikan Saya / Petugas di Sekolah Saya")
+                                        except Exception as e:
+                                            st.error(f"Error hantar: {e}")
+
         elif menu == "export":
             st.header(f"Export Data PPD {kod_ppd}")
+
+            st.header(f"Export Data PPD {kod_ppd}")
+
+
             df_cad = get_cadangan_df(kod_ppd=kod_ppd)
             if not df_cad.empty:
                 st.download_button("📥 Export Cadangan PPD (Excel)", to_excel(df_cad), file_name=f"laporan_PPD_{kod_ppd}_{datetime.date.today()}.xlsx", use_container_width=True)
